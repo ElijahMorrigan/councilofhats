@@ -1108,12 +1108,22 @@ let combatTurn = 0;
 // ═══════════════════════════════════════
 window.onload = () => {
     populateCreation();
-    const saved = localStorage.getItem('hatRPG_v2');
-    if (saved) {
-        player = JSON.parse(saved);
-        showScreen('screen-hub');
-        updateHub();
+    // Multi-character: check if we have a selected character
+    const allChars = getAllCharacters();
+    const activeId = localStorage.getItem('hatRPG_activeChar');
+    if(allChars.length>0 && activeId) {
+        const found = allChars.find(c=>c.id===activeId);
+        if(found) {
+            player = found.data;
+            showScreen('screen-hub');
+            updateHub();
+            return;
+        }
     }
+    if(allChars.length>0) {
+        showCharacterSelect();
+    }
+    // else show creation screen (already active)
 };
 
 function populateCreation() {
@@ -2157,8 +2167,9 @@ function addLog(type,msg) {
 function clearLog() { document.getElementById('combat-log').innerHTML=''; }
 function savePlayer() { localStorage.setItem('hatRPG_v2',JSON.stringify(player)); }
 function resetJourney() {
-    if(confirm('Unravel thy soul completely? All progress lost.')) {
-        localStorage.removeItem('hatRPG_v2'); location.reload();
+    if(confirm('Unravel thy soul completely? This character will be deleted.')) {
+        deleteActiveCharacter();
+        showCharacterSelect();
     }
 }
 
@@ -2926,6 +2937,656 @@ window.addEventListener('load',()=>{
         traitsDiv.parentNode.insertBefore(section,traitsDiv.nextSibling);
     }
 },true);
+
+// ═══════════════════════════════════════
+// MULTI-CHARACTER SYSTEM
+// ═══════════════════════════════════════
+function getAllCharacters() {
+    try { return JSON.parse(localStorage.getItem('hatRPG_chars')||'[]'); } catch(e){return[];}
+}
+function saveAllCharacters(chars) {
+    localStorage.setItem('hatRPG_chars', JSON.stringify(chars));
+}
+function savePlayer() {
+    if(!player.stats) player.stats={};
+    player.stats._maxDepth=Math.max(player.stats._maxDepth||0,dungeonDepth);
+    if(!player._charId) player._charId='char_'+Date.now();
+    const chars=getAllCharacters();
+    const idx=chars.findIndex(c=>c.id===player._charId);
+    const entry={id:player._charId, name:player.name, class:player.class?.name, icon:player.class?.icon, level:player.level, data:player};
+    if(idx>-1) chars[idx]=entry; else chars.push(entry);
+    saveAllCharacters(chars);
+    localStorage.setItem('hatRPG_activeChar', player._charId);
+    checkAchievements();
+}
+function deleteActiveCharacter() {
+    const id=player._charId||localStorage.getItem('hatRPG_activeChar');
+    if(!id) return;
+    const chars=getAllCharacters().filter(c=>c.id!==id);
+    saveAllCharacters(chars);
+    localStorage.removeItem('hatRPG_activeChar');
+}
+function showCharacterSelect() {
+    populateCreation();
+    const chars=getAllCharacters();
+    const list=document.getElementById('charselect-list');
+    if(list) {
+        list.innerHTML='';
+        if(!chars.length) {
+            list.innerHTML='<div style="text-align:center;padding:20px;font-style:italic;color:var(--border);grid-column:1/-1;">No hat wearers found. Manifest a new soul.</div>';
+        }
+        chars.forEach(c=>{
+            const rank=getCouncilRankFor(c.data);
+            const div=document.createElement('div');
+            div.style.cssText='border:1px solid var(--gold);padding:15px;background:rgba(255,255,255,0.1);cursor:pointer;transition:0.2s;';
+            div.onmouseover=()=>div.style.background='rgba(139,105,20,0.2)';
+            div.onmouseout=()=>div.style.background='rgba(255,255,255,0.1)';
+            div.innerHTML=`<div style="font-size:2rem;margin-bottom:6px;">${c.icon||'🎩'}</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--dark-red);">${c.name}</div>
+                <div style="font-size:0.75rem;color:var(--border);margin:4px 0;">${c.class||'Unknown'}</div>
+                <div style="font-size:0.7rem;color:var(--gold);">Level ${c.level||1} · ${rank}</div>
+                <div style="display:flex;gap:6px;margin-top:10px;">
+                    <button class="btn" style="flex:1;font-size:0.7rem;padding:6px;" onclick="loadCharacter('${c.id}')">Play</button>
+                    <button class="btn" style="flex:0 0 auto;font-size:0.7rem;padding:6px;background:#555;width:40px;" onclick="event.stopPropagation();if(confirm('Delete ${c.name}?'))deleteCharacter('${c.id}')">✕</button>
+                </div>`;
+            list.appendChild(div);
+        });
+    }
+    showScreen('screen-charselect');
+}
+function getCouncilRankFor(pData) {
+    let rank=COUNCIL_RANKS[0];
+    for(const r of COUNCIL_RANKS){if((pData?.level||1)>=r.lvl) rank=r;}
+    return rank.name;
+}
+function loadCharacter(id) {
+    const chars=getAllCharacters();
+    const found=chars.find(c=>c.id===id);
+    if(!found){alert('Character not found!');return;}
+    player=found.data;
+    localStorage.setItem('hatRPG_activeChar',id);
+    showScreen('screen-hub');
+    updateHub();
+}
+function deleteCharacter(id) {
+    const chars=getAllCharacters().filter(c=>c.id!==id);
+    saveAllCharacters(chars);
+    showCharacterSelect();
+}
+function newCharacter() {
+    // Reset player state for a new character
+    player={name:'',class:null,stats:{},traits:[],runes:{effect:['ignite'],delivery:['touch'],potency:['faded']},spells:[],gold:50,mana:50,maxMana:50,level:1,exp:0,perkPoints:0,ownedPerks:[],evolutionPath:[],currentEvoTier:0,zones:{},statuses:{},safetyPinUsed:false,killCount:0,crownjewelKills:0,styleStacks:0,statPoints:0,equippedGear:{crown:null,brim:null,band:null,lining:null,pin:null},hatInventory:[],consumables:[],achievements:[],deathCount:0,underworldThreadCost:5};
+    currentBalance=10;
+    document.querySelectorAll('.selectable').forEach(el=>el.classList.remove('selected'));
+    document.getElementById('char-name').value='';
+    document.getElementById('balance-points').textContent='10';
+    showScreen('screen-creation');
+}
+
+// Override finalizeCharacter to assign charId
+const _origFinalizeCharacter=finalizeCharacter;
+finalizeCharacter=function(){
+    player._charId='char_'+Date.now();
+    player.deathCount=0;
+    player.underworldThreadCost=5;
+    player.statPoints=0;
+    player.equippedGear=player.equippedGear||{crown:null,brim:null,band:null,lining:null,pin:null};
+    player.hatInventory=player.hatInventory||[];
+    player.consumables=player.consumables||[];
+    _origFinalizeCharacter();
+};
+
+// ═══════════════════════════════════════
+// HUB EXTRA BUTTONS
+// ═══════════════════════════════════════
+function openRest(){showScreen('screen-rest');}
+function openCasino(){document.getElementById('casino-gold').textContent=player.gold;showScreen('screen-casino');}
+
+// Inject Rest, Casino, Stat Points, Character Select buttons into hub
+const _origUpdateHub2=updateHub;
+updateHub=function(){
+    _origUpdateHub2();
+    // Add buttons if not already there
+    if(!document.getElementById('hub-extra-btns')){
+        const actionsDiv=document.querySelector('#screen-hub .btn[onclick="enterDungeon()"]')?.parentElement;
+        if(actionsDiv){
+            const extra=document.createElement('div');
+            extra.id='hub-extra-btns';
+            extra.innerHTML=`
+                <button class="btn" style="background:#3a2a1a;" onclick="openRest()">🛏️ Rest Quarters</button>
+                <button class="btn" style="background:#1a2a3a;" onclick="openCasino()">🎰 Hat & Chance Casino</button>
+                <button class="btn" style="background:#1a3a2a;" onclick="openStatSpend()">📊 Spend Stat Points${player.statPoints>0?' ✦':''}</button>
+                <button class="btn" style="background:#2a1a3a;" onclick="showCharacterSelect()">👥 Character Select</button>`;
+            actionsDiv.appendChild(extra);
+        }
+    }
+    // Update stat points button glow
+    const spBtn=document.querySelector('#hub-extra-btns button[onclick="openStatSpend()"]');
+    if(spBtn) spBtn.textContent=`📊 Spend Stat Points${(player.statPoints||0)>0?' ('+player.statPoints+' pts)✦':''}`;
+    // Stat bar colour at high values
+    document.querySelectorAll('.stat-bar').forEach((bar,i)=>{
+        const stat=statOrder[i]; if(!stat) return;
+        const val=player.stats[stat]||0;
+        bar.style.background=val>=30?'#c9a84c':val>=20?'#8b4513':val>=10?'var(--dark-red)':'#888';
+    });
+};
+
+// ═══════════════════════════════════════
+// REST SYSTEM
+// ═══════════════════════════════════════
+function doRest(type){
+    if(type==='nap'){
+        ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id]&&player.zones[z.id].hp>0) player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,Math.floor(player.zones[z.id].hp+player.zones[z.id].maxHp*0.3));});
+        player.mana=Math.min(player.maxMana,player.mana+Math.floor(player.maxMana*0.3));
+        showAchievementToast('😴 Nap complete. +30% HP & Mana.');
+    } else if(type==='sleep'){
+        if(player.gold<50){alert('Not enough Stitches! Need 50.');return;}
+        player.gold-=50;
+        ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id]) player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,Math.floor(player.zones[z.id].maxHp*0.75));});
+        player.mana=Math.floor(player.maxMana*0.75);
+        showAchievementToast('🛌 Full night\'s sleep. All zones at 75%.');
+    } else if(type==='meditate'){
+        if(player.gold<150){alert('Not enough Stitches! Need 150.');return;}
+        player.gold-=150;
+        ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id]) player.zones[z.id].hp=player.zones[z.id].maxHp;});
+        player.mana=player.maxMana;
+        showAchievementToast('🧘 Hat Meditation complete. Full restoration.');
+    }
+    savePlayer(); showScreen('screen-hub'); updateHub();
+}
+
+// ═══════════════════════════════════════
+// STAT POINTS SYSTEM
+// ═══════════════════════════════════════
+function openStatSpend(){updateStatSpendUI();showScreen('screen-stats-spend');}
+function updateStatSpendUI(){
+    document.getElementById('stat-points-display').textContent=player.statPoints||0;
+    const grid=document.getElementById('stat-spend-grid'); grid.innerHTML='';
+    statOrder.forEach(stat=>{
+        const val=player.stats[stat]||0;
+        const div=document.createElement('div');
+        div.style.cssText='border:1px solid var(--gold);padding:12px;background:rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;';
+        div.innerHTML=`<div>
+            <div class="cinzel" style="font-size:0.65rem;">${stat.toUpperCase()}</div>
+            <div style="font-size:1.2rem;color:var(--dark-red);font-weight:bold;">${val}</div>
+            <div style="font-size:0.65rem;color:var(--border);">${statDescs[stat]}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+            <button class="btn" style="width:40px;padding:4px;font-size:0.8rem;" onclick="spendStat('${stat}',1)" ${(player.statPoints||0)<1?'disabled':''}>+1</button>
+            <button class="btn" style="width:40px;padding:4px;font-size:0.8rem;background:#555;" onclick="spendStat('${stat}',5)" ${(player.statPoints||0)<5?'disabled':''}>+5</button>
+        </div>`;
+        grid.appendChild(div);
+    });
+}
+function spendStat(stat,amount){
+    if((player.statPoints||0)<amount){alert('Not enough stat points!');return;}
+    player.statPoints-=amount;
+    player.stats[stat]=(player.stats[stat]||0)+amount;
+    // Update mana if crown spent
+    if(stat==='crown'){player.maxMana=30+player.stats.crown*2; player.mana=Math.min(player.mana,player.maxMana);}
+    buildPlayerZones();
+    savePlayer(); updateStatSpendUI();
+    showAchievementToast(`📊 +${amount} ${stat.toUpperCase()}!`);
+}
+
+// ═══════════════════════════════════════
+// UNDERWORLD SYSTEM
+// ═══════════════════════════════════════
+let underworldState={threads:0,needed:5,enemyHp:0,enemyMaxHp:0,enemyName:'',playerHp:0,playerMaxHp:0,playerMana:0,turn:0,braced:false,weakenMult:1};
+
+const UW_ENEMIES=[
+    {name:'Lost Bowler',icon:'👒',hp:40,atk:6,threads:1},
+    {name:'Forgotten Fez',icon:'🔴',hp:55,atk:8,threads:1},
+    {name:'Drifting Stetson',icon:'🤠',hp:70,atk:10,threads:2},
+    {name:'Phantom Trilby',icon:'🕴️',hp:90,atk:12,threads:2},
+    {name:'The Void Brim',icon:'🌑',hp:120,atk:15,threads:3},
+];
+
+function enterUnderworld(){
+    player.deathCount=(player.deathCount||0)+1;
+    player.underworldThreadCost=Math.floor(5*Math.pow(2,player.deathCount-1));
+    // Restore player to minimal fighting state
+    underworldState={
+        threads:0,
+        needed:player.underworldThreadCost,
+        enemyHp:0,enemyMaxHp:0,enemyName:'',enemyIcon:'',
+        playerHp:Math.floor(50+player.stats.weight*2),
+        playerMaxHp:Math.floor(50+player.stats.weight*2),
+        playerMana:Math.floor(20+player.stats.crown),
+        turn:0,braced:false,
+        weakenMult:Math.max(0.4,1-((player.deathCount-1)*0.15)),// weaker each death
+    };
+    document.getElementById('uw-death-count').textContent=player.deathCount;
+    document.getElementById('uw-threads-needed').textContent=underworldState.needed;
+    document.getElementById('uw-threads-have').textContent=0;
+    document.getElementById('uw-resurrection').style.display='none';
+    document.getElementById('uw-actions').style.display='block';
+    document.getElementById('uw-log').innerHTML='';
+    uwLog('☠️ Thou hast entered the Hat Underworld. Defeat the Lost Hats to collect Soul Threads.');
+    uwLog(`Need ${underworldState.needed} Soul Threads to resurrect. (Death #${player.deathCount})`);
+    spawnUwEnemy();
+    showScreen('screen-underworld');
+}
+
+function spawnUwEnemy(){
+    const pool=UW_ENEMIES.filter(e=>e.hp*underworldState.weakenMult<=Math.max(30,underworldState.threads*20+40));
+    const template=pool[Math.floor(Math.random()*pool.length)]||UW_ENEMIES[0];
+    underworldState.enemyHp=Math.floor(template.hp*underworldState.weakenMult);
+    underworldState.enemyMaxHp=underworldState.enemyHp;
+    underworldState.enemyName=template.name;
+    underworldState.enemyIcon=template.icon;
+    underworldState.enemyAtk=Math.floor(template.atk*underworldState.weakenMult);
+    underworldState.enemyThreads=template.threads;
+    renderUw();
+}
+
+function renderUw(){
+    const us=underworldState;
+    document.getElementById('uw-threads-have').textContent=us.threads;
+    const manaBar=document.getElementById('uw-mana-bar');
+    if(manaBar) manaBar.style.width=(us.playerMana/Math.floor(20+player.stats.crown)*100)+'%';
+    document.getElementById('uw-mana-text').textContent=`${us.playerMana} / ${Math.floor(20+player.stats.crown)} Soul Mana`;
+    // Player zones
+    const pct=Math.max(0,(us.playerHp/us.playerMaxHp)*100);
+    document.getElementById('uw-zone-display').innerHTML=`
+        <div style="margin-bottom:6px;font-size:0.8rem;"><strong>Soul HP: ${us.playerHp}/${us.playerMaxHp}</strong></div>
+        <div style="height:12px;background:#ccc;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${pct>50?'#9b59b6':'#8b0000'};border-radius:4px;transition:width 0.3s;"></div></div>`;
+    // Enemy
+    const epct=Math.max(0,(us.enemyHp/us.enemyMaxHp)*100);
+    document.getElementById('uw-enemy-display').innerHTML=`
+        <div style="font-size:1.5rem;margin-bottom:4px;">${us.enemyIcon||'👻'}</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.8rem;color:#9b59b6;">${us.enemyName}</div>
+        <div style="font-size:0.75rem;margin:4px 0;">HP: ${us.enemyHp}/${us.enemyMaxHp} | Atk: ${us.enemyAtk} | Drops: ${us.enemyThreads} 🧵</div>
+        <div style="height:10px;background:#ccc;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${epct}%;background:#4a1259;border-radius:4px;transition:width 0.3s;"></div></div>`;
+}
+
+function uwLog(msg){
+    const log=document.getElementById('uw-log');
+    log.innerHTML=`<div>${msg}</div>`+log.innerHTML;
+}
+
+function uwAttack(){
+    const us=underworldState;
+    us.turn++;
+    // Player attack: based on brim stat, soul strike
+    const roll=Math.floor(Math.random()*20)+1;
+    const dmg=Math.floor((5+player.stats.brim*0.5)*underworldState.weakenMult*1.5);
+    const isCrit=roll>=18;
+    const finalDmg=isCrit?dmg*2:dmg;
+    us.enemyHp=Math.max(0,us.enemyHp-finalDmg);
+    uwLog(isCrit?`✦ SOUL CRIT! Roll ${roll} — ${finalDmg} damage to ${us.enemyName}!`:`Roll ${roll} — Soul Strike: ${finalDmg} damage to ${us.enemyName}.`);
+    if(us.enemyHp<=0){
+        uwLog(`✦ ${us.enemyName} fades! +${us.enemyThreads} Soul Thread${us.enemyThreads>1?'s':''}!`);
+        us.threads+=us.enemyThreads;
+        document.getElementById('uw-threads-have').textContent=us.threads;
+        showAchievementToast(`🧵 +${us.enemyThreads} Soul Thread${us.enemyThreads>1?'s':''}!`);
+        if(us.threads>=us.needed){
+            uwLog('✦✦✦ ENOUGH SOUL THREADS! Thy resurrection is at hand!');
+            document.getElementById('uw-resurrection').style.display='block';
+            document.getElementById('uw-actions').style.display='none';
+        } else {
+            setTimeout(()=>spawnUwEnemy(),600);
+        }
+        renderUw(); return;
+    }
+    // Enemy turn
+    if(!us.braced){
+        const eDmg=Math.floor(us.enemyAtk*(0.8+Math.random()*0.4));
+        us.playerHp=Math.max(0,us.playerHp-eDmg);
+        uwLog(`${us.enemyIcon} ${us.enemyName} strikes for ${eDmg} soul damage.`);
+    } else {
+        const eDmg=Math.floor(us.enemyAtk*0.3);
+        us.playerHp=Math.max(0,us.playerHp-eDmg);
+        us.braced=false;
+        uwLog(`Brace absorbs most of ${us.enemyName}'s ${eDmg} damage.`);
+    }
+    if(us.playerHp<=0){
+        uwLog('💀 Thy soul is defeated in the Underworld. The threads scatter...');
+        document.getElementById('uw-actions').style.display='none';
+        setTimeout(()=>{
+            // Reset underworld — threads lost, enemies get slightly weaker
+            underworldState.weakenMult=Math.max(0.25,underworldState.weakenMult*0.85);
+            uwLog('The Underworld resets. Enemies grow slightly weaker. Begin again...');
+            underworldState.threads=0;
+            underworldState.playerHp=underworldState.playerMaxHp;
+            document.getElementById('uw-threads-have').textContent=0;
+            document.getElementById('uw-actions').style.display='block';
+            spawnUwEnemy();
+        },2000);
+    }
+    renderUw();
+}
+
+function uwBrace(){
+    underworldState.braced=true;
+    uwLog('🛡 Thou brace thy soul. Next enemy strike reduced by 70%.');
+    renderUw();
+}
+
+function resurrect(){
+    // Restore player to hub with partial HP
+    ZONE_TEMPLATES.forEach(z=>{
+        if(player.zones[z.id]){
+            player.zones[z.id].hp=Math.floor(player.zones[z.id].maxHp*0.4);
+        }
+    });
+    player.mana=Math.floor(player.maxMana*0.5);
+    player.statuses={};
+    dungeonDepth=0;
+    savePlayer();
+    showAchievementToast('🎩 Resurrected! Thy hat returns from the beyond.');
+    showScreen('screen-hub');
+    updateHub();
+}
+
+// ═══════════════════════════════════════
+// CLASS ABILITY SYSTEM
+// ═══════════════════════════════════════
+const CLASS_ABILITIES={
+    brim_paladin:{
+        name:'Holy Brim Judgement',icon:'⚡',manaCost:20,cooldown:3,
+        use(){ dealDamageToZone(enemy,'hat',Math.floor(25+player.stats.brim*1.5)); dealDamageToZone(enemy,'crown',Math.floor(15+player.stats.brim)); addLog('spell','⚡ Holy Brim Judgement! Hat and Crown smited!'); }
+    },
+    shadow_beanie:{
+        name:'Hat Snatch',icon:'🧢',manaCost:15,cooldown:4,
+        use(){ const stolen=Math.floor(10+player.stats.tilt); if(enemy.zones.brim) enemy.zones.brim.debuffStacks+=3; addLog('spell',`🧢 Hat Snatch! Enemy Brim debuffed ×3 and stole ${stolen} Stitches!`); player.gold+=stolen; }
+    },
+    sombrero_sage:{
+        name:'El Sombrero Supremo',icon:'🌵',manaCost:35,cooldown:5,
+        use(){ ZONE_TEMPLATES.forEach(z=>{ if(enemy.zones[z.id]) dealDamageToZone(enemy,z.id,Math.floor(18+player.stats.crown*1.2)); }); addLog('spell','🌵 El Sombrero Supremo! All enemy zones scorched!'); }
+    },
+    chaotic_trilby:{
+        name:'Chaos Brim',icon:'🌀',manaCost:10,cooldown:2,
+        use(){
+            const effects=['deal_big','heal_all','regen_mana','stun','all_debuff'];
+            const e=effects[Math.floor(Math.random()*effects.length)];
+            if(e==='deal_big'){dealDamageToZone(enemy,'body',Math.floor(40+Math.random()*30));addLog('spell','🌀 Chaos Brim: Massive body blow!');}
+            else if(e==='heal_all'){ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id])player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,player.zones[z.id].hp+20);});addLog('spell','🌀 Chaos Brim: Somehow healed thee!');}
+            else if(e==='regen_mana'){player.mana=Math.min(player.maxMana,player.mana+40);addLog('spell','🌀 Chaos Brim: Mana surge!');}
+            else if(e==='stun'){enemy.statuses.stiffened=2;addLog('spell','🌀 Chaos Brim: Enemy stunned!');}
+            else{enemy.statuses.singed=3;enemy.statuses.jitter=3;addLog('spell','🌀 Chaos Brim: All debuffs applied to enemy!');}
+        }
+    },
+    top_hat_tycoon:{
+        name:'Parade Command',icon:'💼',manaCost:25,cooldown:4,
+        use(){ ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id]){player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,player.zones[z.id].hp+15);}}); player.statuses.braced=true; addLog('spell','💼 Parade Command! All zones buffed +15 HP and Braced!'); }
+    },
+    bowler_bruiser:{
+        name:'Brim Slam',icon:'🥊',manaCost:18,cooldown:3,
+        use(){ const dmg=Math.floor(35+player.stats.weight*1.5); dealDamageToZone(enemy,targetZone,dmg); enemy.statuses.stiffened=1; addLog('spell',`🥊 Brim Slam! ${dmg} to ${targetZone.toUpperCase()} + enemy stunned!`); }
+    },
+    beret_artist:{
+        name:'Inspire Hat',icon:'🎨',manaCost:20,cooldown:3,
+        use(){ ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id])player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,player.zones[z.id].hp+Math.floor(12+player.stats.style));}); player.styleStacks=(player.styleStacks||0)+3; addLog('spell',`🎨 Inspire Hat! All zones healed +${12+player.stats.style} HP, +3 Style stacks!`); }
+    },
+    bucket_fisher:{
+        name:'Flood Brim',icon:'🪣',manaCost:15,cooldown:3,
+        use(){ player.statuses={}; player.statuses.reinforced=true; player.statuses.reinforcedHp=20; addLog('spell','🪣 Flood Brim! All status effects cleansed. Reinforced shield applied!'); }
+    },
+    fez_wizard:{
+        name:'Arcane Fez Blast',icon:'🔴',manaCost:0,cooldown:4,
+        use(){ const dmg=Math.floor(30+player.stats.crown*2); dealDamageToZone(enemy,targetZone,dmg); addLog('spell',`🔴 Arcane Fez Blast! ${dmg} true damage to ${targetZone.toUpperCase()} — FREE!`); }
+    },
+    mortarboard_scholar:{
+        name:'Thesis Defence',icon:'🎓',manaCost:22,cooldown:5,
+        use(){ player._thesisDefence=3; ZONE_TEMPLATES.forEach(z=>{if(player.zones[z.id])player.zones[z.id].debuffStacks=0;}); addLog('spell','🎓 Thesis Defence! All zone debuff stacks cleared. 50% incoming damage reduction for 3 turns!'); }
+    },
+    cowboy_ranger:{
+        name:'Lasso Brim',icon:'🤠',manaCost:18,cooldown:4,
+        use(){ enemy.statuses.stiffened=2; dealDamageToZone(enemy,targetZone,Math.floor(15+player.stats.tilt*1.5)); addLog('spell','🤠 Lasso Brim! Enemy immobilised 2 turns + bonus damage!'); }
+    },
+    jester_jinx:{
+        name:'Grand Jape',icon:'🃏',manaCost:20,cooldown:3,
+        use(){ // Swap two random enemy zone HPs
+            const keys=Object.keys(enemy.zones).filter(k=>enemy.zones[k].hp>0);
+            if(keys.length>=2){const a=keys[Math.floor(Math.random()*keys.length)];let b;do{b=keys[Math.floor(Math.random()*keys.length)];}while(b===a);const tmp=enemy.zones[a].hp;enemy.zones[a].hp=enemy.zones[b].hp;enemy.zones[b].hp=tmp;addLog('spell',`🃏 Grand Jape! Enemy ${a.toUpperCase()} and ${b.toUpperCase()} zones swapped! Confusion!`);}
+            enemy.statuses.jitter=2;
+        }
+    },
+    witch_hat_warlock:{
+        name:'Hex of the Brim',icon:'🧙',manaCost:30,cooldown:5,
+        use(){ enemy.statuses.singed=5; enemy.statuses.jitter=3; enemy.statuses.stiffened=1; ZONE_TEMPLATES.forEach(z=>{if(enemy.zones[z.id])enemy.zones[z.id].debuffStacks+=2;}); addLog('spell','🧙 Hex of the Brim! All debuffs applied simultaneously!'); }
+    },
+    admiral_tricorn:{
+        name:'Broadside',icon:'⚓',manaCost:28,cooldown:5,
+        use(){ const dmg=Math.floor(12+player.stats.brim); ZONE_TEMPLATES.forEach(z=>{if(enemy.zones[z.id])dealDamageToZone(enemy,z.id,dmg);}); addLog('spell',`⚓ Broadside! All enemy zones hit for ${dmg} each!`); }
+    },
+    beekeepers_hat:{
+        name:'Swarm',icon:'🐝',manaCost:20,cooldown:4,
+        use(){ enemy.statuses.singed=(enemy.statuses.singed||0)+3; ZONE_TEMPLATES.forEach(z=>{if(enemy.zones[z.id]&&z.id==='hat')enemy.zones[z.id].hp=Math.max(0,enemy.zones[z.id].hp-15);}); addLog('spell','🐝 Swarm! Enemy Hat stung for 15 + Singed ×3 applied!'); }
+    },
+    plague_doctor_hat:{
+        name:'Miasma Brim',icon:'🎭',manaCost:25,cooldown:5,
+        use(){ enemy.statuses.singed=(enemy.statuses.singed||0)+4; enemy.statuses.jitter=3; enemy.statuses.stiffened=1; addLog('spell','🎭 Miasma Brim! Enemy drowning in status effects!'); }
+    },
+};
+
+let classAbilityCooldown=0;
+
+function useClassAbility(){
+    const ability=CLASS_ABILITIES[player.class?.id];
+    if(!ability){addLog('system','No class ability available.');return;}
+    if(classAbilityCooldown>0){addLog('system',`Class ability on cooldown: ${classAbilityCooldown} turn${classAbilityCooldown>1?'s':''} remaining.`);return;}
+    if(player.mana<ability.manaCost){addLog('system',`Not enough mana! Need ${ability.manaCost}.`);return;}
+    player.mana=Math.max(0,player.mana-ability.manaCost);
+    classAbilityCooldown=ability.cooldown;
+    ability.use();
+    checkEnemyDead(); renderCombat();
+    if(!isEnemyDead()) setTimeout(enemyTurn,900);
+}
+
+// Reduce cooldown each turn
+const _origProcessTurnEnd=processTurnEnd;
+processTurnEnd=function(){
+    _origProcessTurnEnd();
+    if(classAbilityCooldown>0) classAbilityCooldown--;
+    // Thesis Defence damage reduction
+    if(player._thesisDefence>0) player._thesisDefence--;
+};
+
+// Inject class ability button into combat physical tab
+const _origRenderCombat=renderCombat;
+renderCombat=function(){
+    _origRenderCombat();
+    // Add class ability button to physical tab if not there
+    const physTab=document.getElementById('tab-physical');
+    if(physTab&&!document.getElementById('class-ability-btn')){
+        const btn=document.createElement('button');
+        btn.id='class-ability-btn';
+        btn.className='btn purple-btn';
+        btn.style.cssText='margin-top:6px;';
+        btn.onclick=useClassAbility;
+        physTab.appendChild(btn);
+    }
+    const btn=document.getElementById('class-ability-btn');
+    if(btn){
+        const ability=CLASS_ABILITIES[player.class?.id];
+        if(ability){
+            const cd=classAbilityCooldown>0?` (CD: ${classAbilityCooldown}t)`:'';
+            btn.textContent=`${ability.icon} ${ability.name} — ${ability.manaCost}MP${cd}`;
+            btn.disabled=classAbilityCooldown>0||player.mana<ability.manaCost;
+        } else {
+            btn.style.display='none';
+        }
+    }
+};
+
+// ═══════════════════════════════════════
+// CASINO SYSTEM
+// ═══════════════════════════════════════
+const SLOT_SYMBOLS=['🎩','🎓','🤠','🧢','🪖','🎭','🔴','🃏'];
+const SLOT_WEIGHTS=[10,8,8,7,6,5,5,4]; // weighted — top hat most common
+
+function weightedSymbol(){
+    const total=SLOT_WEIGHTS.reduce((a,b)=>a+b,0);
+    let r=Math.floor(Math.random()*total);
+    for(let i=0;i<SLOT_SYMBOLS.length;i++){r-=SLOT_WEIGHTS[i];if(r<0)return SLOT_SYMBOLS[i];}
+    return SLOT_SYMBOLS[0];
+}
+
+function switchCasinoTab(tab){
+    document.querySelectorAll('#screen-casino .tab-btn').forEach(b=>b.classList.remove('active'));
+    ['slots','dice','cards'].forEach(t=>document.getElementById('casino-'+t)?.classList.remove('active'));
+    document.getElementById('casino-'+tab)?.classList.add('active');
+    document.querySelector(`[data-tab="casino-${tab}"]`)?.classList.add('active');
+}
+
+function spinSlots(){
+    const bet=parseInt(document.getElementById('slot-bet').value);
+    if(player.gold<bet){alert('Not enough Stitches!');return;}
+    player.gold-=bet;
+    document.getElementById('casino-gold').textContent=player.gold;
+    // Animate
+    const display=document.getElementById('slot-display');
+    let ticks=0;
+    const anim=setInterval(()=>{
+        display.innerHTML=[0,1,2].map(()=>`<span>${weightedSymbol()}</span>`).join(' ');
+        ticks++;
+        if(ticks>15){
+            clearInterval(anim);
+            const result=[weightedSymbol(),weightedSymbol(),weightedSymbol()];
+            display.innerHTML=result.map(s=>`<span>${s}</span>`).join(' ');
+            // Judge result
+            let mult=0;let msg='';
+            if(result[0]===result[1]&&result[1]===result[2]){
+                if(result[0]==='🎩'){mult=5;msg='🏆 TRIPLE TOP HAT! 5×!';}
+                else if(result[0]==='🎓'){mult=4;msg='🎓 Triple Scholar! 4×!';}
+                else if(result[0]==='🤠'){mult=3;msg='🤠 Triple Cowboy! 3×!';}
+                else if(result[0]==='🧢'){mult=2.5;msg='🧢 Triple Beanie! 2.5×!';}
+                else{mult=2;msg=`Three of a Kind! 2×!`;}
+            } else if(result[0]===result[1]||result[1]===result[2]||result[0]===result[2]){
+                mult=1.2; msg='Pair! 1.2×';
+            } else {
+                mult=0; msg='No match. Better luck next time.';
+            }
+            if(mult>0){
+                const win=Math.floor(bet*mult);
+                player.gold+=win;
+                msg+=` +${win} Stitches!`;
+            }
+            document.getElementById('slot-result').textContent=msg;
+            document.getElementById('casino-gold').textContent=player.gold;
+            savePlayer();
+        }
+    },80);
+}
+
+function rollDiceGame(choice){
+    const bet=parseInt(document.getElementById('dice-bet').value);
+    if(player.gold<bet){alert('Not enough Stitches!');return;}
+    player.gold-=bet;
+    const roll=Math.floor(Math.random()*20)+1;
+    const display=document.getElementById('dice-result-display');
+    const text=document.getElementById('dice-result-text');
+    display.textContent=roll;
+    const isHigh=roll>=11;
+    const won=(choice==='high'&&isHigh)||(choice==='low'&&!isHigh);
+    let mult=1.9; let msg='';
+    if(roll===20){mult=3.0; msg=`Nat 20! Triple payout! Roll: ${roll} — `;}
+    else if(roll===1){
+        player.gold=Math.max(0,player.gold-bet); // Lose double on nat 1
+        msg=`Nat 1! Lost DOUBLE! Roll: ${roll} — `;
+        text.textContent=msg+(choice==='low'?'Low as expected, but the dice punish thee.':'High? Not today.');
+        document.getElementById('casino-gold').textContent=player.gold;
+        savePlayer(); return;
+    }
+    if(won){
+        const win=Math.floor(bet*mult);
+        player.gold+=win;
+        msg+=`${roll} is ${isHigh?'High':'Low'}! Correct! +${win} Stitches!`;
+    } else {
+        msg+=`${roll} is ${isHigh?'High':'Low'}! Wrong bet. Lost ${bet} Stitches.`;
+    }
+    text.textContent=msg;
+    document.getElementById('casino-gold').textContent=player.gold;
+    savePlayer();
+}
+
+const CARD_DECK=['🎩','🎩','🎩','🎩','🎓','🎓','🎓','🤠','🤠','🤠','🧢','🧢','🪖','🪖','🎭','🔴','🃏','🌀','⭐','👑'];
+function playCards(){
+    const bet=parseInt(document.getElementById('card-bet').value);
+    if(player.gold<bet){alert('Not enough Stitches!');return;}
+    player.gold-=bet;
+    // Draw 3
+    const shuffled=[...CARD_DECK].sort(()=>Math.random()-0.5);
+    const hand=[shuffled[0],shuffled[1],shuffled[2]];
+    // Display
+    const cards=document.getElementById('card-display').children;
+    [...cards].forEach((c,i)=>{c.textContent=hand[i];});
+    // Judge
+    let mult=0; let msg='';
+    const freq={};
+    hand.forEach(c=>{freq[c]=(freq[c]||0)+1;});
+    const counts=Object.values(freq).sort((a,b)=>b-a);
+    const hasHat=hand.includes('🎩');
+    if(counts[0]===3){mult=4;msg='Three of a Kind! 4×!';}
+    else if(counts[0]===2&&hasHat){mult=2.5;msg='Pair + Top Hat! 2.5×!';}
+    else if(counts[0]===2){mult=1.5;msg='Pair! 1.5×!';}
+    else{
+        // High card check: crown/star = high
+        const highCards=['👑','⭐','🌀'];
+        if(hand.some(c=>highCards.includes(c))){mult=1.0;msg='High card! 1× — break even.';}
+        else{mult=0;msg='No match, low hand. Lost thy Stitches.';}
+    }
+    if(mult>0){
+        const win=Math.floor(bet*mult);
+        player.gold+=win;
+        msg+=` +${win} Stitches!`;
+    }
+    document.getElementById('card-result').textContent=msg;
+    document.getElementById('casino-gold').textContent=player.gold;
+    savePlayer();
+}
+
+// ═══════════════════════════════════════
+// DOUBLE-EDGED PERKS (expensive, powerful, with drawback)
+// ═══════════════════════════════════════
+// Inject into existing PERKS array
+PERKS.push(
+    {id:'p_berserker_edge',name:'Berserker\'s Brim',icon:'😤',cost:3,req:null,reqLvl:15,category:'Combat',desc:'Deal +40% damage when below 40% total HP. BUT: cannot Brace while below 40% HP.'},
+    {id:'p_glass_cannon',name:'Glass Cannon Hat',icon:'💎',cost:3,req:null,reqLvl:20,category:'Combat',desc:'All damage +25%. All zone HP -20%. Thou hitst hard and crumbles fast.'},
+    {id:'p_soul_tap',name:'Soul Tap',icon:'🩸',cost:3,req:null,reqLvl:25,category:'Magic',desc:'Spells deal +30% more damage. BUT: each spell also costs 5 HP from Body zone.'},
+    {id:'p_chaos_weave',name:'Chaos Weave',icon:'🌀',cost:3,req:null,reqLvl:30,category:'Magic',desc:'Every spell has 20% chance to proc twice. BUT: 10% chance it misfires and hits thee instead.'},
+    {id:'p_death_defier',name:'Death Defier\'s Brim',icon:'💀',cost:4,req:null,reqLvl:40,category:'Survival',desc:'When any zone reaches 0 HP, all other zones gain +10 HP. BUT: destroyed zones stay destroyed.'},
+    {id:'p_gambler',name:'The Gambler\'s Hat',icon:'🎲',cost:2,req:null,reqLvl:10,category:'Utility',desc:'After each combat victory, flip a coin: Heads = +50% gold. Tails = -25% gold.'},
+    {id:'p_merchant_deal',name:'Devil\'s Deal',icon:'🤝',cost:2,req:null,reqLvl:15,category:'Utility',desc:'Shop prices -30%. BUT: Travelling Merchant stock is always 1 item only.'},
+    {id:'p_overdrive',name:'Hat Overdrive',icon:'⚡',cost:4,req:'p_relentless',reqLvl:80,category:'Combat',desc:'Class ability cooldown halved. BUT: class ability mana cost doubled.'},
+    {id:'p_vampire_lord',name:'Vampire Lord Lining',icon:'🧛',cost:4,req:null,reqLvl:50,category:'Survival',desc:'Heal 50% of damage dealt. BUT: cannot use consumables or rest mid-dungeon.'},
+    {id:'p_all_in',name:'All In',icon:'🏆',cost:5,req:null,reqLvl:60,category:'Combat',desc:'Once per combat, sacrifice 50% of current HP to deal that amount as bonus damage to any zone.'}
+);
+
+// Apply double-edged perk effects in combat
+const _origPlayerAction=playerAction;
+playerAction=function(type){
+    // Glass cannon check
+    if(player.ownedPerks.includes('p_glass_cannon')&&type==='brace'){
+        const totHp=Object.values(player.zones).reduce((s,z)=>s+z.hp,0);
+        const totMaxHp=Object.values(player.zones).reduce((s,z)=>s+z.maxHp,0);
+        if(totHp/totMaxHp<0.4&&player.ownedPerks.includes('p_berserker_edge')){
+            addLog('system','Berserker\'s Brim: Cannot Brace below 40% HP!'); return;
+        }
+    }
+    _origPlayerAction(type);
+};
+
+// Berserker edge bonus applied to baseDmg in attack — handled via evo bonuses check
+// All-in ability button
+function allIn(){
+    if(!player.ownedPerks.includes('p_all_in')){return;}
+    const totHp=Object.values(player.zones).reduce((s,z)=>s+z.hp,0);
+    const sacrifice=Math.floor(totHp*0.5);
+    // Distribute HP loss across zones
+    let remaining=sacrifice;
+    ZONE_TEMPLATES.forEach(z=>{
+        if(remaining<=0||!player.zones[z.id]) return;
+        const loss=Math.min(player.zones[z.id].hp-1,remaining);
+        player.zones[z.id].hp-=loss; remaining-=loss;
+    });
+    dealDamageToZone(enemy,targetZone,sacrifice);
+    addLog('crit',`🏆 ALL IN! Sacrificed ${sacrifice} HP → ${sacrifice} damage to ${targetZone.toUpperCase()}!`);
+    checkEnemyDead(); renderCombat();
+    if(!isEnemyDead()) setTimeout(enemyTurn,900);
+}
 </script>
 </body>
 </html>
