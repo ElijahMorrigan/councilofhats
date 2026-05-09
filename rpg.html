@@ -210,7 +210,7 @@
 </head>
 <body>
 <div class="game-container">
-    <a href="../index.html" class="nav-back">⬅ RETURN TO HQ</a>
+    <a href="../index.html" class="nav-back" onclick="if(document.referrer==='')event.preventDefault();">⬅ RETURN TO HQ</a>
 
     <!-- ══════════════ SCREEN: CHARACTER CREATION ══════════════ -->
     <div id="screen-creation" class="screen active">
@@ -284,6 +284,8 @@
                 <button class="btn" onclick="openSpellbook()">Tome of Weaves</button>
                 <button class="btn purple-btn" onclick="openPerks()">Perk Codex</button>
                 <button class="btn gold-btn" onclick="openEvolution()" id="evo-btn" style="display:none;">Class Evolution ✦</button>
+                <button class="btn" style="background:#5c3d1e;" onclick="openShop()">🛒 The Hat Emporium</button>
+                <button class="btn" style="background:#2a4d3a;" onclick="openWardrobe()">🎩 Hat Wardrobe</button>
 
                 <div style="margin-top:12px; padding:10px; border:1px solid var(--gold); background:rgba(0,0,0,0.03);">
                     <div class="cinzel">Active Traits</div>
@@ -363,9 +365,9 @@
         <div id="combat-actions">
             <!-- Tab bar for actions -->
             <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchCombatTab('physical')">⚔ Physical</button>
-                <button class="tab-btn" onclick="switchCombatTab('spells')">✨ Spells</button>
-                <button class="tab-btn" onclick="switchCombatTab('target')">🎯 Target</button>
+                <button class="tab-btn active" data-tab="physical" onclick="switchCombatTab('physical')">⚔ Physical</button>
+                <button class="tab-btn" data-tab="spells" onclick="switchCombatTab('spells')">✨ Spells</button>
+                <button class="tab-btn" data-tab="target" onclick="switchCombatTab('target')">🎯 Target</button>
             </div>
 
             <!-- Physical Tab -->
@@ -475,7 +477,150 @@
         <div id="evo-paths-container"></div>
         <button class="btn" style="background:#444; margin-top:20px;" onclick="showScreen('screen-hub')">Return to Hub</button>
     </div>
+
+    <!-- ══════════════ SCREEN: SHOP ══════════════ -->
+    <div id="screen-shop" class="screen">
+        <h1>The Hat Emporium</h1>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:12px;">
+            <div style="padding:10px; border:1px solid var(--gold); background:rgba(0,0,0,0.03); text-align:center;">
+                <div class="cinzel" style="font-size:0.65rem;">Thy Stitches</div>
+                <div id="shop-gold" style="font-size:1.8rem; color:var(--gold);">0</div>
+            </div>
+            <div style="padding:10px; border:1px solid var(--gold); background:rgba(0,0,0,0.03); text-align:center;">
+                <div class="cinzel" style="font-size:0.65rem;">Merchant refreshes in</div>
+                <div id="merchant-refresh-label" style="font-size:0.9rem; color:var(--purple); font-style:italic;">next dungeon run</div>
+            </div>
+        </div>
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="shop-quarter" onclick="switchShopTab('quarter')">⚔ Quartermaster</button>
+            <button class="tab-btn" data-tab="shop-merchant" onclick="switchShopTab('merchant')">✦ Travelling Merchant</button>
+            <button class="tab-btn" data-tab="shop-repair" onclick="switchShopTab('repair')">🔧 Repairs</button>
+        </div>
+        <div id="shop-quarter" class="tab-content active">
+            <div style="font-size:0.8rem; font-style:italic; margin-bottom:10px; color:var(--border);">Fixed stock. Always available. Restocks after each dungeon run.</div>
+            <div id="quartermaster-stock"></div>
+        </div>
+        <div id="shop-merchant" class="tab-content">
+            <div style="font-size:0.8rem; font-style:italic; margin-bottom:10px; color:var(--border);">A mysterious figure appears between runs. Stock is random and rare. Refreshes each dungeon run.</div>
+            <div id="merchant-stock"></div>
+        </div>
+        <div id="shop-repair" class="tab-content">
+            <div style="font-size:0.8rem; font-style:italic; margin-bottom:10px; color:var(--border);">Restore destroyed hat part zones. Cannot repair mid-dungeon.</div>
+            <div id="repair-stock"></div>
+        </div>
+        <button class="btn" style="background:#444; margin-top:20px;" onclick="showScreen('screen-hub')">Return to Hub</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: WARDROBE ══════════════ -->
+    <div id="screen-wardrobe" class="screen">
+        <h1>The Hat Wardrobe</h1>
+        <div class="grid-2" style="gap:20px;">
+            <!-- Left: Equipped hat anatomy -->
+            <div>
+                <div class="cinzel" style="margin-bottom:8px;">⚙ Currently Equipped</div>
+                <div id="wardrobe-equipped" style="border:1px solid var(--gold); padding:15px; background:rgba(255,255,255,0.1); min-height:300px;"></div>
+                <div style="margin-top:10px; padding:10px; border:1px dashed var(--gold); background:rgba(139,105,20,0.05);">
+                    <div class="cinzel" style="font-size:0.65rem; margin-bottom:6px;">Total Gear Bonuses</div>
+                    <div id="wardrobe-totals" style="font-size:0.75rem; line-height:1.9;"></div>
+                </div>
+                <button class="btn" style="margin-top:10px;" onclick="openCrafting()">⚗ Hat Crafting Bench</button>
+            </div>
+            <!-- Right: Inventory -->
+            <div>
+                <div class="cinzel" style="margin-bottom:8px;">🎒 Hat Part Inventory</div>
+                <div id="wardrobe-inventory" style="border:1px solid var(--gold); padding:10px; background:rgba(255,255,255,0.1); min-height:300px; max-height:500px; overflow-y:auto;"></div>
+            </div>
+        </div>
+        <button class="btn" style="background:#444; margin-top:20px;" onclick="showScreen('screen-hub')">Return to Hub</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: CRAFTING ══════════════ -->
+    <div id="screen-crafting" class="screen">
+        <h1>The Hat Crafting Bench</h1>
+        <p style="text-align:center; font-style:italic; font-size:0.85rem; margin-bottom:15px;">Combine two hat parts of the same slot to forge a superior piece. Costs Stitches.</p>
+        <div class="grid-2" style="gap:20px;">
+            <div>
+                <div class="cinzel" style="margin-bottom:6px;">First Part</div>
+                <div id="craft-slot-a" style="border:2px dashed var(--gold); padding:15px; min-height:80px; text-align:center; font-style:italic; color:var(--border); cursor:pointer;" onclick="openCraftPicker('a')">Click to select a part</div>
+                <div class="cinzel" style="margin:10px 0 6px;">Second Part</div>
+                <div id="craft-slot-b" style="border:2px dashed var(--gold); padding:15px; min-height:80px; text-align:center; font-style:italic; color:var(--border); cursor:pointer;" onclick="openCraftPicker('b')">Click to select a part</div>
+                <div id="craft-cost" style="margin-top:10px; text-align:center; font-size:0.8rem; color:var(--gold);"></div>
+                <button class="btn" id="craft-btn" style="margin-top:8px;" onclick="doCraft()" disabled>⚗ Forge</button>
+            </div>
+            <div>
+                <div class="cinzel" style="margin-bottom:6px;">Forge Preview</div>
+                <div id="craft-preview" style="border:1px solid var(--gold); padding:15px; min-height:160px; background:rgba(0,0,0,0.03); font-size:0.8rem; line-height:1.8;">Select two parts of the same slot to see the forge result...</div>
+            </div>
+        </div>
+        <!-- Part picker modal -->
+        <div id="craft-picker" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; display:none; align-items:center; justify-content:center;">
+            <div style="background:var(--parchment); border:4px double var(--border); padding:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto;">
+                <div class="cinzel" style="margin-bottom:10px;">Select a Part</div>
+                <div id="craft-picker-list"></div>
+                <button class="btn" style="background:#444; margin-top:10px;" onclick="closeCraftPicker()">Cancel</button>
+            </div>
+        </div>
+        <button class="btn" style="background:#444; margin-top:20px;" onclick="showScreen('screen-wardrobe')">Return to Wardrobe</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: BOSS ENCOUNTER ══════════════ -->
+    <div id="screen-boss" class="screen">
+        <div style="text-align:center; padding:15px; border:3px double var(--dark-red); background:rgba(107,26,26,0.08); margin-bottom:15px;">
+            <div id="boss-eyebrow" class="cinzel" style="font-size:0.65rem; color:var(--gold); margin-bottom:4px;"></div>
+            <div id="boss-name" style="font-family:'UnifrakturMaguntia',cursive; font-size:2.5rem; color:var(--dark-red);"></div>
+            <div id="boss-title" style="font-family:'Cinzel Decorative',serif; font-size:0.8rem; color:var(--border); margin-top:4px;"></div>
+            <div id="boss-lore" style="font-family:'Crimson Text',serif; font-size:0.95rem; font-style:italic; margin-top:12px; line-height:1.8; max-width:600px; margin-left:auto; margin-right:auto;"></div>
+            <div id="boss-mechanic" style="margin-top:10px; padding:8px; background:rgba(107,26,26,0.1); border:1px solid var(--dark-red); font-size:0.8rem; color:var(--dark-red);"></div>
+        </div>
+        <div style="text-align:center;">
+            <button class="btn" style="max-width:300px; margin:0 auto;" onclick="beginBossFight()">⚔ Face Thy Fate</button>
+            <button class="btn" style="max-width:300px; margin:5px auto; background:#444;" onclick="fleeBoss()">🏃 Flee (lose 50 Stitches)</button>
+        </div>
+    </div>
+
 </div>
+
+<style>
+/* ── SHOP STYLES ── */
+.shop-item { border:1px solid var(--gold); padding:12px 15px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.15); transition:0.2s; }
+.shop-item:hover { background:rgba(139,105,20,0.15); }
+.shop-item-info { flex:1; }
+.shop-item-name { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--dark-red); margin-bottom:3px; }
+.shop-item-desc { font-size:0.75rem; color:var(--border); line-height:1.5; }
+.shop-item-cost { font-family:'Cinzel',serif; font-size:0.9rem; color:var(--gold); font-weight:bold; margin-right:10px; }
+.shop-item.sold-out { opacity:0.4; }
+
+/* ── WARDROBE STYLES ── */
+.gear-slot { border:1px solid var(--gold); padding:10px; margin:6px 0; display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.1); }
+.gear-slot.empty { border-style:dashed; opacity:0.6; }
+.gear-slot-name { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--gold); margin-bottom:3px; }
+.gear-slot-item { font-size:0.8rem; color:var(--ink); }
+.gear-slot-stats { font-size:0.7rem; color:var(--mana); }
+.inv-part { border:1px solid var(--gold); padding:8px 12px; margin:5px 0; cursor:pointer; transition:0.2s; font-size:0.78rem; display:flex; justify-content:space-between; align-items:center; }
+.inv-part:hover { background:rgba(139,105,20,0.2); }
+.rarity-common { border-left:3px solid #888; }
+.rarity-uncommon { border-left:3px solid #4a7a4a; }
+.rarity-rare { border-left:3px solid #2a4d69; }
+.rarity-epic { border-left:3px solid var(--purple); }
+.rarity-legendary { border-left:3px solid var(--gold); background:rgba(139,105,20,0.05); }
+.rarity-tag { padding:1px 5px; font-size:0.6rem; font-family:'Cinzel',serif; border-radius:2px; font-weight:bold; }
+.rt-common { background:#888; color:white; }
+.rt-uncommon { background:#4a7a4a; color:white; }
+.rt-rare { background:#2a4d69; color:white; }
+.rt-epic { background:var(--purple); color:white; }
+.rt-legendary { background:var(--gold); color:var(--ink); }
+
+/* ── ACHIEVEMENT TOAST ── */
+.achievement-toast { position:fixed; bottom:20px; right:20px; background:var(--ink); color:var(--gold); border:2px solid var(--gold); padding:12px 18px; font-family:'Cinzel',serif; font-size:0.75rem; z-index:9999; animation:toastIn 0.4s ease; max-width:280px; }
+@keyframes toastIn { from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)} }
+
+/* ── BOSS STYLES ── */
+.boss-hp-bar { height:16px; background:#ccc; border-radius:4px; border:1px solid var(--dark-red); overflow:hidden; margin:6px 0; }
+.boss-hp-fill { height:100%; background:linear-gradient(90deg,#8b0000,var(--dark-red)); border-radius:4px; transition:width 0.4s; }
+
+/* ── COUNCIL RANK ── */
+.rank-badge { display:inline-block; padding:3px 10px; border:1px solid var(--gold); font-family:'Cinzel',serif; font-size:0.65rem; color:var(--gold); margin-left:8px; }
+</style>
 
 <script>
 // ═══════════════════════════════════════
@@ -1172,8 +1317,9 @@ function switchCombatTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    event.currentTarget.classList.add('active');
-    // Re-render spells when switching to that tab
+    // Activate the matching tab button by data attribute
+    const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+    if(btn) btn.classList.add('active');
     if(tab==='spells') renderSpellButtons();
 }
 
@@ -1725,6 +1871,8 @@ function buyPerk(perk) {
 }
 
 function openPerks() { showScreen('screen-perks'); }
+function openLoom() { showScreen('screen-loom'); }
+function openSpellbook() { showScreen('screen-spellbook'); }
 
 // ═══════════════════════════════════════
 // EVOLUTION SYSTEM
@@ -1796,6 +1944,764 @@ function resetJourney() {
         localStorage.removeItem('hatRPG_v2'); location.reload();
     }
 }
+
+// ═══════════════════════════════════════
+// HAT PART DATA
+// ═══════════════════════════════════════
+const HAT_SLOTS = ['crown','brim','band','lining','pin'];
+const SLOT_ICONS = { crown:'👑', brim:'🔵', band:'🎀', lining:'🧶', pin:'📌' };
+const SLOT_LABELS = { crown:'Crown Piece', brim:'Brim Piece', band:'Hat Band', lining:'Inner Lining', pin:'Lucky Pin' };
+
+const RARITIES = ['common','uncommon','rare','epic','legendary'];
+const RARITY_MULT = { common:1, uncommon:1.3, rare:1.7, epic:2.2, legendary:3.0 };
+const RARITY_COLORS = { common:'#888', uncommon:'#4a7a4a', rare:'#2a4d69', epic:'#6b2d8b', legendary:'#8b6914' };
+
+// Hat part templates — each slot has a pool of possible parts, scaled by rarity
+const HAT_PART_POOLS = {
+    crown: [
+        { id:'tattered_crown',    name:'Tattered Crown Band',   slot:'crown', stats:{crown:2},                special:null,                    lore:'Found in a discount hat bin.' },
+        { id:'scholars_crown',    name:'Scholar\'s Crown Band',  slot:'crown', stats:{crown:4,style:2},        special:null,                    lore:'From a mortarboard, clearly.' },
+        { id:'sage_crown',        name:'Sombrero Sage\'s Band',  slot:'crown', stats:{crown:6},                special:'Mana regen +2/turn',    lore:'Radiates weave energy.' },
+        { id:'chaos_crown',       name:'Chaos-Touched Crown',    slot:'crown', stats:{crown:8,lining:-2},      special:'Spells +15% dmg',       lore:'The Chaos God wore this briefly.' },
+        { id:'grand_crown',       name:'Grand Hat Crown Piece',  slot:'crown', stats:{crown:10,style:5},       special:'Max mana +30',          lore:'Reserved for Council elders.' },
+    ],
+    brim: [
+        { id:'crumpled_brim',     name:'Crumpled Brim',          slot:'brim',  stats:{brim:2},                special:null,                    lore:'Sat on once too many times.' },
+        { id:'reinforced_brim',   name:'Reinforced Brim',         slot:'brim',  stats:{brim:4,weight:2},       special:null,                    lore:'Sewn with iron wire.' },
+        { id:'dueling_brim',      name:'Duelist\'s Brim',         slot:'brim',  stats:{brim:6,tilt:2},         special:'Crit chance +5%',       lore:'This brim has drawn blood.' },
+        { id:'golden_brim',       name:'The Golden Brim',         slot:'brim',  stats:{brim:8,style:4},        special:'Bash damage +10',       lore:'Forged in the Council treasury.' },
+        { id:'chaos_brim',        name:'Brim of Pure Chaos',      slot:'brim',  stats:{brim:12},               special:'Hits all zones 10% chance', lore:'It vibrates slightly.' },
+    ],
+    band: [
+        { id:'plain_band',        name:'Plain Hat Band',          slot:'band',  stats:{style:2},               special:null,                    lore:'Nothing special. Yet.' },
+        { id:'feathered_band',    name:'Feathered Band',          slot:'band',  stats:{style:4,tilt:2},        special:null,                    lore:'A feather of unknown origin.' },
+        { id:'council_band',      name:'Council Seal Band',       slot:'band',  stats:{style:5,tilt:3},        special:'Shop prices -10%',      lore:'Bearing Darkneblade\'s seal.' },
+        { id:'lucky_band',        name:'Band of Fortune',         slot:'band',  stats:{style:6,tilt:4},        special:'+2 to all D20 rolls',   lore:'Luck woven into every thread.' },
+        { id:'chaos_band',        name:'Chaotic Band',            slot:'band',  stats:{style:8,tilt:6},        special:'Random stat +5 each combat', lore:'Refuses to stay still.' },
+    ],
+    lining: [
+        { id:'thin_lining',       name:'Thin Lining',             slot:'lining',stats:{lining:2},              special:null,                    lore:'Barely there.' },
+        { id:'wool_lining',       name:'Wool Lining',             slot:'lining',stats:{lining:4,weight:2},     special:null,                    lore:'Warm. Defensive. Woolly.' },
+        { id:'arcane_lining',     name:'Arcane Lining',           slot:'lining',stats:{lining:6,crown:2},      special:'First spell each combat free', lore:'Absorbs weave energy.' },
+        { id:'void_lining',       name:'Void-Touched Lining',     slot:'lining',stats:{lining:8},              special:'Absorb 10 magic dmg/turn', lore:'Darkness as insulation.' },
+        { id:'council_lining',    name:'Grand Council Lining',    slot:'lining',stats:{lining:10,weight:5},    special:'Status effects -1 duration', lore:'The finest felt known.' },
+    ],
+    pin: [
+        { id:'plain_pin',         name:'Safety Pin',              slot:'pin',   stats:{},                      special:'Survive lethal hit once', lore:'The classic.' },
+        { id:'golden_pin',        name:'Golden Council Pin',      slot:'pin',   stats:{style:3},               special:'+5% all gold drops',    lore:'Awarded by Toffee HQ.' },
+        { id:'chaos_pin',         name:'Chaos Pin',               slot:'pin',   stats:{},                      special:'10% chance: negate any hit', lore:'It winks at thee.' },
+        { id:'rune_pin',          name:'Runic Pin',               slot:'pin',   stats:{crown:3},               special:'Rune drop +20%',        lore:'Carved from a broken rune.' },
+        { id:'grand_pin',         name:'Pin of the Brim',         slot:'pin',   stats:{brim:4,crown:4},        special:'Crits restore 5 mana',  lore:'Darkneblade\'s personal pin.' },
+    ],
+};
+
+function generateHatPart(slotOverride, rarityOverride) {
+    const slot = slotOverride || HAT_SLOTS[Math.floor(Math.random()*HAT_SLOTS.length)];
+    const pool = HAT_PART_POOLS[slot];
+    const base = pool[Math.floor(Math.random()*pool.length)];
+    const rarity = rarityOverride || RARITIES[Math.min(4, Math.floor(Math.random()*RARITIES.length))];
+    const mult = RARITY_MULT[rarity];
+    // Scale stats
+    const scaledStats = {};
+    Object.entries(base.stats).forEach(([k,v])=>{ scaledStats[k]=Math.round(v*mult); });
+    return { ...base, id: base.id+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), rarity, stats:scaledStats, baseId:base.id };
+}
+
+function partStatString(part) {
+    const stats = Object.entries(part.stats).map(([k,v])=>`${v>0?'+':''}${v} ${k.toUpperCase()}`).join(', ');
+    return [stats, part.special].filter(Boolean).join(' | ');
+}
+
+// ═══════════════════════════════════════
+// SHOP SYSTEM
+// ═══════════════════════════════════════
+const CONSUMABLES = [
+    { id:'hat_repair_kit',  name:'Hat Repair Kit',       icon:'🔧', cost:80,  desc:'Restore one destroyed zone to 50% HP.',       use:'repair' },
+    { id:'mana_potion',     name:'Mana Draught',          icon:'💧', cost:50,  desc:'Restore 30 mana instantly (out of combat).',  use:'mana' },
+    { id:'brim_polish',     name:'Brim Polish',           icon:'✨', cost:60,  desc:'Next combat: all Bash rolls +3.',             use:'buff_bash' },
+    { id:'chaos_biscuit',   name:'Chaos Biscuit',         icon:'🍪', cost:30,  desc:'Random effect: heal, damage boost, or mana. Anything goes.', use:'chaos' },
+    { id:'hat_glue',        name:'Hat Glue',              icon:'🪣', cost:40,  desc:'Hat zone cannot be destroyed next combat.',   use:'buff_hat' },
+    { id:'thread_spool',    name:'Rare Thread Spool',     icon:'🧵', cost:120, desc:'Guaranteed rune drop after next combat.',     use:'rune_guarantee' },
+    { id:'toffee_blessing', name:'Toffee\'s Blessing',    icon:'🍬', cost:200, desc:'Full HP restore to all zones.',               use:'full_heal' },
+];
+
+let shopState = {
+    quarterStock: [],
+    merchantStock: [],
+    repairVisible: true,
+    refreshedThisRun: false,
+};
+
+function initShop() {
+    if(!shopState.quarterStock.length) refreshQuartermaster();
+    if(!shopState.merchantStock.length) refreshMerchant();
+}
+
+function refreshQuartermaster() {
+    // Fixed consumables + 2 basic hat parts
+    shopState.quarterStock = [
+        ...CONSUMABLES.slice(0,5).map(c=>({...c, type:'consumable', sold:false})),
+        { ...generateHatPart(null,'common'), type:'part', sold:false, cost:120 },
+        { ...generateHatPart(null,'uncommon'), type:'part', sold:false, cost:220 },
+    ];
+}
+
+function refreshMerchant() {
+    // 4-6 random items weighted toward rare+
+    const count = 4 + Math.floor(Math.random()*3);
+    shopState.merchantStock = [];
+    for(let i=0;i<count;i++) {
+        const roll = Math.random();
+        if(roll<0.1) {
+            // Rare rune
+            const types=['effect','delivery','potency'];
+            const t=types[Math.floor(Math.random()*3)];
+            const pool=Object.values(RUNE_DB[t]);
+            const rune=pool[Math.floor(Math.random()*pool.length)];
+            shopState.merchantStock.push({ id:'rune_'+rune.id+'_'+i, name:`${rune.icon} ${rune.name} Rune`, desc:rune.desc, type:'rune', runeType:t, runeId:rune.id, cost:180, sold:false });
+        } else if(roll<0.4) {
+            const rarityPool=['uncommon','rare','epic'];
+            const r=rarityPool[Math.floor(Math.random()*rarityPool.length)];
+            const part=generateHatPart(null,r);
+            const costs={uncommon:250,rare:400,epic:650};
+            shopState.merchantStock.push({...part, type:'part', sold:false, cost:costs[r]});
+        } else if(roll<0.6) {
+            const leg=generateHatPart(null,'legendary');
+            shopState.merchantStock.push({...leg, type:'part', sold:false, cost:1200});
+        } else {
+            const con=CONSUMABLES[Math.floor(Math.random()*CONSUMABLES.length)];
+            shopState.merchantStock.push({...con, type:'consumable', sold:false, cost:con.cost+30});
+        }
+    }
+}
+
+function openShop() {
+    initShop();
+    showScreen('screen-shop');
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id==='screen-hub') updateHub();
+    if(id==='screen-loom') updateLoom();
+    if(id==='screen-spellbook') updateSpellbook();
+    if(id==='screen-perks') updatePerks();
+    if(id==='screen-evolution') updateEvolution();
+    if(id==='screen-shop') updateShopUI();
+    if(id==='screen-wardrobe') updateWardrobeUI();
+    if(id==='screen-crafting') updateCraftingUI();
+}
+
+function switchShopTab(tab) {
+    document.querySelectorAll('#screen-shop .tab-btn').forEach(b=>b.classList.remove('active'));
+    ['quarter','merchant','repair'].forEach(t=>{ const el=document.getElementById('shop-'+t); if(el) el.classList.remove('active'); });
+    document.getElementById('shop-'+tab).classList.add('active');
+    const btn=document.querySelector(`[data-tab="shop-${tab}"]`); if(btn) btn.classList.add('active');
+}
+
+function updateShopUI() {
+    document.getElementById('shop-gold').textContent = player.gold;
+    renderQuartermaster();
+    renderMerchant();
+    renderRepair();
+}
+
+function renderShopItems(items, containerId) {
+    const cont = document.getElementById(containerId); cont.innerHTML='';
+    if(!items.length) { cont.innerHTML='<div style="padding:20px;text-align:center;font-style:italic;color:var(--border);">Nothing available.</div>'; return; }
+    items.forEach((item,idx)=>{
+        const affordable = player.gold >= item.cost;
+        const div = document.createElement('div');
+        div.className = 'shop-item' + (item.sold?' sold-out':'');
+        let rarityTag = item.rarity ? `<span class="rarity-tag rt-${item.rarity}">${item.rarity.toUpperCase()}</span>` : '';
+        div.innerHTML = `
+            <div class="shop-item-info">
+                <div class="shop-item-name">${item.icon||SLOT_ICONS[item.slot]||'📦'} ${item.name} ${rarityTag}</div>
+                <div class="shop-item-desc">${item.desc||partStatString(item)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span class="shop-item-cost">${item.cost}⚡</span>
+                <button class="btn" style="width:auto;padding:6px 14px;font-size:0.7rem;${item.sold?'opacity:0.4;cursor:not-allowed;':!affordable?'opacity:0.5;cursor:not-allowed;':''}"
+                    ${item.sold||!affordable?'disabled':''} onclick="buyShopItem('${containerId}',${idx})">
+                    ${item.sold?'Sold':'Buy'}
+                </button>
+            </div>`;
+        cont.appendChild(div);
+    });
+}
+
+function renderQuartermaster() { renderShopItems(shopState.quarterStock,'quartermaster-stock'); }
+function renderMerchant() { renderShopItems(shopState.merchantStock,'merchant-stock'); }
+
+function renderRepair() {
+    const cont = document.getElementById('repair-stock'); cont.innerHTML='';
+    const destroyedZones = ZONE_TEMPLATES.filter(z=>player.zones[z.id]&&player.zones[z.id].hp<=0);
+    if(!destroyedZones.length) { cont.innerHTML='<div style="padding:20px;text-align:center;color:var(--green);font-style:italic;">All zones are intact. Thy hat is magnificent.</div>'; return; }
+    destroyedZones.forEach(z=>{
+        const cost=100;
+        const div=document.createElement('div');
+        div.className='shop-item';
+        div.innerHTML=`<div class="shop-item-info">
+            <div class="shop-item-name">${z.icon} Repair ${z.name} Zone</div>
+            <div class="shop-item-desc">Restore to 50% max HP (${Math.floor(player.zones[z.id].maxHp*0.5)} HP). Zone debuffs cleared.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="shop-item-cost">${cost}⚡</span>
+            <button class="btn" style="width:auto;padding:6px 14px;font-size:0.7rem;" ${player.gold<cost?'disabled':''} onclick="buyRepair('${z.id}',${cost})">Repair</button>
+        </div>`;
+        cont.appendChild(div);
+    });
+}
+
+function buyRepair(zoneId,cost) {
+    if(player.gold<cost) return;
+    player.gold-=cost;
+    player.zones[zoneId].hp=Math.floor(player.zones[zoneId].maxHp*0.5);
+    player.zones[zoneId].debuffStacks=0;
+    savePlayer(); updateShopUI();
+    showAchievementToast('🔧 Zone repaired!');
+}
+
+function buyShopItem(containerId, idx) {
+    const stock = containerId==='quartermaster-stock'?shopState.quarterStock:shopState.merchantStock;
+    const item = stock[idx];
+    if(!item||item.sold||player.gold<item.cost) return;
+    player.gold -= item.cost;
+    item.sold = true;
+    if(item.type==='consumable') {
+        if(!player.consumables) player.consumables=[];
+        player.consumables.push({...item});
+        showAchievementToast(`🛒 Purchased: ${item.name}`);
+    } else if(item.type==='part') {
+        if(!player.hatInventory) player.hatInventory=[];
+        player.hatInventory.push({...item});
+        showAchievementToast(`🎩 Acquired: ${item.name}`);
+    } else if(item.type==='rune') {
+        player.runes[item.runeType].push(item.runeId);
+        showAchievementToast(`✨ Rune acquired: ${item.name}`);
+    }
+    savePlayer(); updateShopUI();
+    document.getElementById('shop-gold').textContent=player.gold;
+}
+
+// Apply consumable (called from hub or pre-combat)
+function useConsumable(idx) {
+    if(!player.consumables||!player.consumables[idx]) return;
+    const con=player.consumables[idx];
+    const use=con.use;
+    if(use==='mana') { player.mana=Math.min(player.maxMana,player.mana+30); showAchievementToast('💧 +30 Mana restored!'); }
+    else if(use==='full_heal') { ZONE_TEMPLATES.forEach(z=>{ if(player.zones[z.id]) player.zones[z.id].hp=player.zones[z.id].maxHp; }); showAchievementToast('🍬 All zones fully healed!'); }
+    else if(use==='buff_bash') { if(!player.tempBuffs)player.tempBuffs={}; player.tempBuffs.bashBonus=3; showAchievementToast('✨ Next combat: Bash +3!'); }
+    else if(use==='buff_hat') { if(!player.tempBuffs)player.tempBuffs={}; player.tempBuffs.hatInvincible=true; showAchievementToast('🪣 Hat cannot be destroyed next combat!'); }
+    else if(use==='rune_guarantee') { if(!player.tempBuffs)player.tempBuffs={}; player.tempBuffs.guaranteedRune=true; showAchievementToast('🧵 Guaranteed rune drop next combat!'); }
+    else if(use==='chaos') {
+        const roll=Math.floor(Math.random()*3);
+        if(roll===0) { player.mana=Math.min(player.maxMana,player.mana+50); showAchievementToast('🍪 Chaos Biscuit: +50 Mana!'); }
+        else if(roll===1) { ZONE_TEMPLATES.forEach(z=>{ if(player.zones[z.id]) player.zones[z.id].hp=Math.min(player.zones[z.id].maxHp,player.zones[z.id].hp+30); }); showAchievementToast('🍪 Chaos Biscuit: +30 HP all zones!'); }
+        else { if(!player.tempBuffs)player.tempBuffs={}; player.tempBuffs.bashBonus=(player.tempBuffs.bashBonus||0)+5; showAchievementToast('🍪 Chaos Biscuit: +5 Bash next combat!'); }
+    }
+    player.consumables.splice(idx,1);
+    savePlayer(); updateHubConsumables();
+}
+
+function updateHubConsumables() {
+    // Add consumables section to hub if not present
+    let cont=document.getElementById('hub-consumables');
+    if(!cont) return;
+    cont.innerHTML='';
+    if(!player.consumables||!player.consumables.length) { cont.innerHTML='<em style="font-size:0.75rem;color:var(--border);">No consumables. Visit the Emporium.</em>'; return; }
+    player.consumables.forEach((c,i)=>{
+        const btn=document.createElement('button');
+        btn.className='btn';
+        btn.style.cssText='font-size:0.7rem;padding:6px;margin:2px 0;';
+        btn.innerHTML=`${c.icon||'📦'} ${c.name}`;
+        btn.onclick=()=>useConsumable(i);
+        cont.appendChild(btn);
+    });
+}
+
+// ═══════════════════════════════════════
+// WARDROBE SYSTEM
+// ═══════════════════════════════════════
+function openWardrobe() { showScreen('screen-wardrobe'); }
+
+function updateWardrobeUI() {
+    if(!player.equippedGear) player.equippedGear={crown:null,brim:null,band:null,lining:null,pin:null};
+    if(!player.hatInventory) player.hatInventory=[];
+    renderEquipped(); renderInventory(); renderGearTotals();
+}
+
+function renderEquipped() {
+    const cont=document.getElementById('wardrobe-equipped'); cont.innerHTML='';
+    HAT_SLOTS.forEach(slot=>{
+        const equipped=player.equippedGear[slot];
+        const div=document.createElement('div');
+        div.className='gear-slot'+(equipped?'':' empty');
+        if(equipped) {
+            div.innerHTML=`<div>
+                <div class="gear-slot-name">${SLOT_ICONS[slot]} ${SLOT_LABELS[slot]}</div>
+                <div class="gear-slot-item">${equipped.name} <span class="rarity-tag rt-${equipped.rarity}">${equipped.rarity.toUpperCase()}</span></div>
+                <div class="gear-slot-stats">${partStatString(equipped)}</div>
+            </div>
+            <button class="btn" style="width:auto;padding:4px 10px;font-size:0.65rem;background:#555;" onclick="unequipPart('${slot}')">Unequip</button>`;
+        } else {
+            div.innerHTML=`<div><div class="gear-slot-name">${SLOT_ICONS[slot]} ${SLOT_LABELS[slot]}</div><div style="font-size:0.75rem;font-style:italic;color:var(--border);">Empty slot</div></div>`;
+        }
+        cont.appendChild(div);
+    });
+}
+
+function renderInventory() {
+    const cont=document.getElementById('wardrobe-inventory'); cont.innerHTML='';
+    if(!player.hatInventory.length) { cont.innerHTML='<div style="padding:20px;text-align:center;font-style:italic;color:var(--border);">No parts in inventory.<br>Find them in dungeons or buy from the Emporium.</div>'; return; }
+    // Group by slot
+    HAT_SLOTS.forEach(slot=>{
+        const parts=player.hatInventory.filter(p=>p.slot===slot);
+        if(!parts.length) return;
+        const header=document.createElement('div');
+        header.innerHTML=`<div class="cinzel" style="font-size:0.65rem;margin:8px 0 4px;">${SLOT_ICONS[slot]} ${SLOT_LABELS[slot]}</div>`;
+        cont.appendChild(header);
+        parts.forEach((part,idx)=>{
+            const isEquipped=player.equippedGear[slot]&&player.equippedGear[slot].id===part.id;
+            const div=document.createElement('div');
+            div.className=`inv-part rarity-${part.rarity}`;
+            div.innerHTML=`<div>
+                <span class="rarity-tag rt-${part.rarity}">${part.rarity.toUpperCase()}</span>
+                <strong> ${part.name}</strong><br>
+                <span style="font-size:0.7rem;color:var(--mana);">${partStatString(part)}</span>
+            </div>
+            <button class="btn" style="width:auto;padding:4px 10px;font-size:0.65rem;${isEquipped?'background:var(--green);':''}" onclick="equipPart('${slot}','${part.id}')">
+                ${isEquipped?'Equipped':'Equip'}
+            </button>`;
+            cont.appendChild(div);
+        });
+    });
+}
+
+function renderGearTotals() {
+    const totals={};
+    const specials=[];
+    if(player.equippedGear) {
+        Object.values(player.equippedGear).forEach(part=>{
+            if(!part) return;
+            Object.entries(part.stats).forEach(([k,v])=>{ totals[k]=(totals[k]||0)+v; });
+            if(part.special) specials.push(part.special);
+        });
+    }
+    const cont=document.getElementById('wardrobe-totals');
+    let html=Object.entries(totals).map(([k,v])=>`<span style="color:${v>0?'var(--green)':'var(--dark-red)'};">${v>0?'+':''}${v} ${k.toUpperCase()}</span>`).join(' &nbsp; ');
+    if(specials.length) html+=`<br><span style="color:var(--purple);font-size:0.7rem;">✦ ${specials.join('<br>✦ ')}</span>`;
+    if(!html) html='<em style="color:var(--border);">No gear equipped.</em>';
+    cont.innerHTML=html;
+}
+
+function getGearStatBonus(stat) {
+    if(!player.equippedGear) return 0;
+    return Object.values(player.equippedGear).reduce((sum,part)=>sum+(part&&part.stats[stat]?part.stats[stat]:0),0);
+}
+
+function getGearSpecials() {
+    if(!player.equippedGear) return [];
+    return Object.values(player.equippedGear).filter(Boolean).map(p=>p.special).filter(Boolean);
+}
+
+function equipPart(slot,partId) {
+    const part=player.hatInventory.find(p=>p.id===partId);
+    if(!part) return;
+    // Unequip current if any
+    if(player.equippedGear[slot]) {
+        player.hatInventory.push(player.equippedGear[slot]);
+    }
+    player.equippedGear[slot]=part;
+    player.hatInventory=player.hatInventory.filter(p=>p.id!==partId);
+    buildPlayerZones(); // Recalculate zones with new gear
+    savePlayer(); updateWardrobeUI();
+    showAchievementToast(`🎩 ${part.name} equipped!`);
+}
+
+function unequipPart(slot) {
+    if(!player.equippedGear[slot]) return;
+    player.hatInventory.push(player.equippedGear[slot]);
+    player.equippedGear[slot]=null;
+    buildPlayerZones();
+    savePlayer(); updateWardrobeUI();
+}
+
+// Integrate gear stats into zone building
+const _origBuildPlayerZones = buildPlayerZones;
+buildPlayerZones = function() {
+    _origBuildPlayerZones();
+    // Apply gear bonuses on top
+    if(player.equippedGear) {
+        Object.values(player.equippedGear).forEach(part=>{
+            if(!part) return;
+            // Hat-specific bonuses: lining bonus to Hat zone
+            if(part.slot==='lining'&&part.stats.lining&&player.zones.hat) {
+                player.zones.hat.maxHp+=Math.floor(part.stats.lining*2);
+                player.zones.hat.hp=Math.min(player.zones.hat.hp+Math.floor(part.stats.lining*2),player.zones.hat.maxHp);
+            }
+            if(part.slot==='brim'&&part.stats.brim&&player.zones.brim) {
+                player.zones.brim.maxHp+=Math.floor(part.stats.brim*3);
+                player.zones.brim.hp=Math.min(player.zones.brim.hp+Math.floor(part.stats.brim*3),player.zones.brim.maxHp);
+            }
+            if(part.slot==='crown'&&part.stats.crown&&player.zones.crown) {
+                player.zones.crown.maxHp+=Math.floor(part.stats.crown*2);
+                player.zones.crown.hp=Math.min(player.zones.crown.hp+Math.floor(part.stats.crown*2),player.zones.crown.maxHp);
+            }
+        });
+    }
+};
+
+// ═══════════════════════════════════════
+// CRAFTING SYSTEM
+// ═══════════════════════════════════════
+let craftSlots={a:null,b:null};
+const CRAFT_COSTS={common:80,uncommon:150,rare:280,epic:500,legendary:999};
+const RARITY_UPGRADE=['common','uncommon','rare','epic','legendary'];
+
+function openCrafting() { showScreen('screen-crafting'); }
+
+function updateCraftingUI() {
+    craftSlots={a:null,b:null};
+    document.getElementById('craft-slot-a').innerHTML='Click to select a part';
+    document.getElementById('craft-slot-a').style.borderColor='var(--gold)';
+    document.getElementById('craft-slot-b').innerHTML='Click to select a part';
+    document.getElementById('craft-slot-b').style.borderColor='var(--gold)';
+    document.getElementById('craft-preview').innerHTML='Select two parts of the same slot...';
+    document.getElementById('craft-cost').textContent='';
+    document.getElementById('craft-btn').disabled=true;
+}
+
+function openCraftPicker(slotKey) {
+    if(!player.hatInventory||!player.hatInventory.length) { alert('No parts in inventory!'); return; }
+    const picker=document.getElementById('craft-picker');
+    const list=document.getElementById('craft-picker-list');
+    list.innerHTML='';
+    // Filter: if other slot filled, only show same slot type
+    const otherPart=slotKey==='a'?craftSlots.b:craftSlots.a;
+    const filterSlot=otherPart?otherPart.slot:null;
+    const available=player.hatInventory.filter(p=>!filterSlot||p.slot===filterSlot);
+    if(!available.length) { alert('No compatible parts! Both parts must be the same slot type.'); return; }
+    available.forEach(part=>{
+        const div=document.createElement('div');
+        div.className=`inv-part rarity-${part.rarity}`;
+        div.style.cursor='pointer';
+        div.innerHTML=`<div><span class="rarity-tag rt-${part.rarity}">${part.rarity.toUpperCase()}</span> <strong>${part.name}</strong><br><span style="font-size:0.7rem;color:var(--mana);">${partStatString(part)}</span></div>`;
+        div.onclick=()=>{ selectCraftPart(slotKey,part); closeCraftPicker(); };
+        list.appendChild(div);
+    });
+    picker.style.display='flex';
+}
+
+function closeCraftPicker() { document.getElementById('craft-picker').style.display='none'; }
+
+function selectCraftPart(slotKey,part) {
+    craftSlots[slotKey]=part;
+    const el=document.getElementById('craft-slot-'+slotKey);
+    el.innerHTML=`<span class="rarity-tag rt-${part.rarity}">${part.rarity.toUpperCase()}</span> <strong>${part.name}</strong><br><small>${partStatString(part)}</small>`;
+    el.style.borderColor='var(--dark-red)';
+    updateCraftPreview();
+}
+
+function updateCraftPreview() {
+    const a=craftSlots.a, b=craftSlots.b;
+    if(!a||!b) return;
+    if(a.slot!==b.slot) { document.getElementById('craft-preview').innerHTML='<span style="color:var(--dark-red);">⚠ Both parts must be the same slot type!</span>'; document.getElementById('craft-btn').disabled=true; return; }
+    // Result: higher rarity of the two, upgraded one tier, stats averaged + bonus
+    const rarityA=RARITY_UPGRADE.indexOf(a.rarity), rarityB=RARITY_UPGRADE.indexOf(b.rarity);
+    const baseRarity=Math.max(rarityA,rarityB);
+    const resultRarity=RARITY_UPGRADE[Math.min(4,baseRarity+1)];
+    const cost=CRAFT_COSTS[a.rarity]+CRAFT_COSTS[b.rarity];
+    // Average stats + 20% bonus
+    const allKeys=[...new Set([...Object.keys(a.stats),...Object.keys(b.stats)])];
+    const resultStats={};
+    allKeys.forEach(k=>{ resultStats[k]=Math.round(((a.stats[k]||0)+(b.stats[k]||0))/2*1.2); });
+    const preview=`<strong>Forge Result:</strong><br>
+        Slot: ${SLOT_LABELS[a.slot]}<br>
+        Rarity: <span class="rarity-tag rt-${resultRarity}">${resultRarity.toUpperCase()}</span><br>
+        Stats: ${Object.entries(resultStats).map(([k,v])=>`${v>0?'+':''}${v} ${k.toUpperCase()}`).join(', ')}<br>
+        Special: Inherits best special from either part<br><br>
+        <strong>Cost: ${cost} Stitches</strong> ${player.gold<cost?'<span style="color:var(--dark-red);">(insufficient)</span>':'<span style="color:var(--green);">(affordable)</span>'}`;
+    document.getElementById('craft-preview').innerHTML=preview;
+    document.getElementById('craft-cost').textContent=`Forge cost: ${cost} Stitches`;
+    document.getElementById('craft-btn').disabled=player.gold<cost||a.slot!==b.slot;
+    document.getElementById('craft-btn')._craftCost=cost;
+    document.getElementById('craft-btn')._resultRarity=resultRarity;
+    document.getElementById('craft-btn')._resultStats=resultStats;
+}
+
+function doCraft() {
+    const a=craftSlots.a, b=craftSlots.b;
+    if(!a||!b||a.slot!==b.slot) return;
+    const cost=document.getElementById('craft-btn')._craftCost;
+    const resultRarity=document.getElementById('craft-btn')._resultRarity;
+    const resultStats=document.getElementById('craft-btn')._resultStats;
+    if(player.gold<cost) { alert('Not enough Stitches!'); return; }
+    player.gold-=cost;
+    // Remove both parts from inventory
+    [a.id,b.id].forEach(id=>{ player.hatInventory=player.hatInventory.filter(p=>p.id!==id); });
+    // Also remove from equipped if somehow equipped (shouldn't be but safety)
+    HAT_SLOTS.forEach(s=>{ if(player.equippedGear[s]&&(player.equippedGear[s].id===a.id||player.equippedGear[s].id===b.id)) player.equippedGear[s]=null; });
+    // Generate result
+    const basePool=HAT_PART_POOLS[a.slot];
+    const base=basePool[Math.floor(Math.random()*basePool.length)];
+    const special=a.special||b.special||null;
+    const forged={
+        id:'forged_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+        name:`Forged ${base.name}`,
+        slot:a.slot, rarity:resultRarity,
+        stats:resultStats, special,
+        lore:`Forged from ${a.name} and ${b.name} in the Council forge.`,
+        baseId:base.id,
+    };
+    player.hatInventory.push(forged);
+    savePlayer();
+    showAchievementToast(`⚗ Forged: ${forged.name}!`);
+    updateCraftingUI();
+    document.getElementById('craft-preview').innerHTML=`<span style="color:var(--green);">✦ Forge successful!<br><strong>${forged.name}</strong> added to inventory.</span>`;
+}
+
+// ═══════════════════════════════════════
+// BOSS SYSTEM
+// ═══════════════════════════════════════
+const NAMED_BOSSES = [
+    { depth:5, name:'The Grand Trilby', title:'Fallen Knight of the Council', icon:'🕴️',
+      lore:'"Once a Brim Paladin of great renown, the Grand Trilby abandoned the Rule of Cool in pursuit of hat power beyond reason. He now wears three trilbies simultaneously. The shame is palpable, but the threat is real."',
+      mechanic:'⚠ Special: Every turn, targets Hat zone regardless of thy target choice. On turn 3, removes thy hat entirely unless Hat zone HP > 60%.',
+      atk:20, lvlMult:1.5, hatless:false, aiTarget:'hat', allTargetHat:true,
+      zones:{hat:{hp:80,maxHp:80},crown:{hp:60,maxHp:60},brim:{hp:100,maxHp:100},body:{hp:150,maxHp:150},legs:{hp:70,maxHp:70}},
+      reward:{gold:300,rarity:'epic'} },
+    { depth:10, name:'The Hatless King', title:'Sovereign of the Uncapped', icon:'👑',
+      lore:'"He was once the greatest hat wearer in the land. Then the Chaos God made him a bet. He lost. His kingdom of hats was forfeit. He has been hatless for one hundred years and his rage has curdled into something magnificent and terrible."',
+      mechanic:'⚠ Special: Inflicts HATLESS on thee every 2 turns regardless of hat HP. Also applies Hatless Phobia penalty to all attacks.',
+      atk:28, lvlMult:1.7, hatless:true, aiTarget:'hat', forceHatless:true,
+      zones:{hat:{hp:0,maxHp:0},crown:{hp:120,maxHp:120},brim:{hp:80,maxHp:80},body:{hp:220,maxHp:220},legs:{hp:90,maxHp:90}},
+      reward:{gold:500,rarity:'legendary'} },
+    { depth:15, name:'The Chaos Seamstress', title:'Weaver of Unraveled Things', icon:'🧵',
+      lore:'"Nobody knows where she came from. She appeared in the Deep Threads forty years ago, knitting hats out of void energy and distributing them to enemies. Every hat she makes is cursed. Every hat is magnificent."',
+      mechanic:'⚠ Special: Each turn, applies a random debuff to a random zone. At HP 50%, she begins repairing her own zones each turn.',
+      atk:24, lvlMult:1.6, hatless:false, aiTarget:'brim', randomDebuffs:true,
+      zones:{hat:{hp:100,maxHp:100},crown:{hp:140,maxHp:140},brim:{hp:80,maxHp:80},body:{hp:280,maxHp:280},legs:{hp:100,maxHp:100}},
+      reward:{gold:600,rarity:'legendary'} },
+    { depth:20, name:'Darkneblade\'s Shadow', title:'The Reflection Without a Hat', icon:'🌑',
+      lore:'"A shadow that peeled itself from the Grand Hat Wearer during the Year of the Brim Eclipse. It has all of Darkneblade\'s knowledge and none of the hat. It is consumed by jealousy. It wants thy hat specifically."',
+      mechanic:'⚠ Special: Copies thy last action each turn and applies it to thee. Immune to Hatless debuff. At HP 25%, steals thy equipped Pin slot effect permanently until victory.',
+      atk:32, lvlMult:2.0, hatless:true, aiTarget:'hat', mirrorAction:true,
+      zones:{hat:{hp:0,maxHp:0},crown:{hp:160,maxHp:160},brim:{hp:140,maxHp:140},body:{hp:350,maxHp:350},legs:{hp:120,maxHp:120}},
+      reward:{gold:800,rarity:'legendary'} },
+];
+
+// Procedural boss generator (depth 21+)
+const PROC_PREFIXES=['Void','Chaos','Brim','Grand','Ancient','Cursed','Shadowed','Eternal','Lost','Forgotten'];
+const PROC_NOUNS=['Hatter','Weaver','Trilby','Felt','Stitch','Loom','Thread','Crown','Brim','Pin'];
+const PROC_TITLES=['of the Unraveled','of the Deep Threads','the Hatless','of Pure Chaos','the Stitchbreaker','the Brimless','who Wears Too Many','of the Final Hat'];
+const PROC_MECHANICS=[
+    'Every 3 turns, destroys the zone with lowest HP.',
+    'Attacks twice per turn at 60% power each.',
+    'Heals 20 HP every turn. Must be overwhelmed quickly.',
+    'Immune to spell damage. Only physical attacks work.',
+    'Applies a random status effect on every hit.',
+    'All attacks target thy Hat zone exclusively.',
+    'At 50% HP, gains +50% attack power.',
+];
+
+function generateProceduralBoss(depth) {
+    const name=`${PROC_PREFIXES[Math.floor(Math.random()*PROC_PREFIXES.length)]} ${PROC_NOUNS[Math.floor(Math.random()*PROC_NOUNS.length)]}`;
+    const title=PROC_TITLES[Math.floor(Math.random()*PROC_TITLES.length)];
+    const mechanic=PROC_MECHANICS[Math.floor(Math.random()*PROC_MECHANICS.length)];
+    const scaledHp=Math.floor(100+depth*15);
+    return {
+        name, title:`${name} ${title}`, icon:'💀',
+        lore:`"A creature that emerged from the Deep Threads at depth ${depth}. The Council has no records of it. That's never a good sign."`,
+        mechanic:`⚠ Special: ${mechanic}`,
+        atk:Math.floor(20+depth*1.2), lvlMult:1.8, hatless:Math.random()<0.4, aiTarget:['hat','crown','brim','body'][Math.floor(Math.random()*4)],
+        zones:{hat:{hp:scaledHp*0.7|0,maxHp:scaledHp*0.7|0},crown:{hp:scaledHp*0.6|0,maxHp:scaledHp*0.6|0},brim:{hp:scaledHp,maxHp:scaledHp},body:{hp:scaledHp*1.8|0,maxHp:scaledHp*1.8|0},legs:{hp:scaledHp*0.8|0,maxHp:scaledHp*0.8|0}},
+        reward:{gold:200+depth*20, rarity:depth>30?'legendary':'epic'},
+        _mechanic: PROC_MECHANICS.indexOf(mechanic),
+    };
+}
+
+let currentBoss=null;
+
+function checkBossEncounter() {
+    // Named bosses at exact depths, procedural at 21+ every 5 depths
+    const named=NAMED_BOSSES.find(b=>b.depth===dungeonDepth);
+    if(named) { currentBoss={...named, zones:JSON.parse(JSON.stringify(named.zones)), statuses:{}}; showBossEncounter(); return true; }
+    if(dungeonDepth>20&&dungeonDepth%5===0) { currentBoss={...generateProceduralBoss(dungeonDepth), zones:JSON.parse(JSON.stringify(generateProceduralBoss(dungeonDepth).zones)), statuses:{}}; showBossEncounter(); return true; }
+    return false;
+}
+
+function showBossEncounter() {
+    document.getElementById('boss-eyebrow').textContent=`BOSS ENCOUNTER — DEPTH ${dungeonDepth}`;
+    document.getElementById('boss-name').textContent=currentBoss.name;
+    document.getElementById('boss-title').textContent=currentBoss.title;
+    document.getElementById('boss-lore').textContent=currentBoss.lore;
+    document.getElementById('boss-mechanic').textContent=currentBoss.mechanic;
+    showScreen('screen-boss');
+}
+
+function beginBossFight() {
+    // Convert boss to enemy format and enter combat
+    enemy={
+        name:currentBoss.name, icon:currentBoss.icon||'💀',
+        hatless:currentBoss.hatless, atk:currentBoss.atk,
+        aiTarget:currentBoss.aiTarget, zones:currentBoss.zones,
+        statuses:{}, isBoss:true, bossData:currentBoss,
+    };
+    player.statuses=player.statuses||{};
+    if(player.traits.includes('hateless')) player.statuses.hatless=true;
+    targetZone='hat'; combatTurn=0;
+    renderCombat();
+    clearLog();
+    addLog('crit',`⚔ BOSS: ${enemy.name} — ${currentBoss.title}!`);
+    addLog('system',currentBoss.mechanic);
+    document.getElementById('combat-actions').style.display='block';
+    document.getElementById('combat-loot').style.display='none';
+    showScreen('screen-combat');
+    switchCombatTab('physical');
+}
+
+function fleeBoss() {
+    if(player.gold<50) { alert('Not enough Stitches to flee! (Need 50)'); return; }
+    player.gold=Math.max(0,player.gold-50);
+    dungeonDepth=Math.max(0,dungeonDepth-1);
+    currentBoss=null;
+    savePlayer(); showScreen('screen-hub');
+    showAchievementToast('🏃 Fled the boss! Lost 50 Stitches.');
+}
+
+// Hook into enterDungeon to check for boss
+const _origEnterDungeon=enterDungeon;
+enterDungeon=function() {
+    dungeonDepth++;
+    if(checkBossEncounter()) return;
+    dungeonDepth--; // Will be re-incremented in original
+    _origEnterDungeon();
+};
+
+// Hook into processVictory for boss rewards + merchant refresh
+const _origProcessVictory=processVictory;
+processVictory=function() {
+    _origProcessVictory();
+    // Boss-specific rewards
+    if(enemy.isBoss&&currentBoss) {
+        const bonusGold=currentBoss.reward?.gold||200;
+        player.gold+=bonusGold;
+        const bonusPart=generateHatPart(null,currentBoss.reward?.rarity||'epic');
+        if(!player.hatInventory) player.hatInventory=[];
+        player.hatInventory.push(bonusPart);
+        document.getElementById('loot-details').innerHTML+=`<br>🏆 <strong>BOSS DEFEATED!</strong> +${bonusGold} bonus Stitches!<br>🎩 Dropped: <span class="rarity-tag rt-${bonusPart.rarity}">${bonusPart.rarity.toUpperCase()}</span> ${bonusPart.name}`;
+        currentBoss=null;
+        showAchievementToast('🏆 Boss defeated! Legendary spoils!');
+    }
+    // Refresh merchant stock after dungeon completion
+    refreshMerchant();
+    // Apply gear hat-part drops (25% chance)
+    if(Math.random()<0.25&&dungeonDepth>0) {
+        const rarityByDepth=dungeonDepth<5?'common':dungeonDepth<10?'uncommon':dungeonDepth<20?'rare':'epic';
+        const drop=generateHatPart(null,rarityByDepth);
+        if(!player.hatInventory) player.hatInventory=[];
+        player.hatInventory.push(drop);
+        document.getElementById('loot-details').innerHTML+=`<br>🎩 Hat Part Drop: <span class="rarity-tag rt-${drop.rarity}">${drop.rarity.toUpperCase()}</span> ${drop.name}`;
+    }
+    savePlayer();
+};
+
+// ═══════════════════════════════════════
+// COUNCIL RANK SYSTEM
+// ═══════════════════════════════════════
+const COUNCIL_RANKS=[
+    { lvl:1,  name:'Hatless Initiate',      desc:'Thou art new here. The hat does not yet know thee.' },
+    { lvl:5,  name:'Brim Apprentice',        desc:'A hat. A purpose. Still mostly guesswork.' },
+    { lvl:10, name:'Thread Journeyman',      desc:'The Deep Threads are beginning to respect thee.' },
+    { lvl:20, name:'Hat Adept',              desc:'Thou hast survived things that should not be survived.' },
+    { lvl:30, name:'Council Member',         desc:'Officially recognised. A certificate exists somewhere.' },
+    { lvl:50, name:'Senior Hat Wearer',      desc:'The Emporium gives thee a slight nod of acknowledgement.' },
+    { lvl:75, name:'Grand Weaver',           desc:'Runes whisper thy name. Hats rearrange themselves near thee.' },
+    { lvl:100,name:'Council Elder',          desc:'Perks are finished. The journey has only deepened.' },
+    { lvl:250,name:'Brim Transcendent',      desc:'Thou art no longer fully of this world. The hat is in charge now.' },
+    { lvl:500,name:'Darkneblade\'s Chosen',  desc:'A seat at the Grand Table is prepared. It has a hat on it.' },
+    { lvl:1000,name:'The Final Hat',         desc:'There is nothing left to become. Thou art the hat.' },
+];
+
+function getCouncilRank() {
+    let rank=COUNCIL_RANKS[0];
+    for(const r of COUNCIL_RANKS) { if(player.level>=r.lvl) rank=r; }
+    return rank;
+}
+
+// ═══════════════════════════════════════
+// ACHIEVEMENT SYSTEM
+// ═══════════════════════════════════════
+const ACHIEVEMENTS=[
+    { id:'first_blood',   name:'First Blood of the Brim',  desc:'Win thy first combat.',            check:()=>player.killCount>=1 },
+    { id:'hat_fall',      name:'Hatless and Alive',         desc:'Survive a combat while Hatless.',  check:()=>player.stats._survivedHatless },
+    { id:'deep5',         name:'Into the Deep',             desc:'Reach dungeon depth 5.',           check:()=>player.stats._maxDepth>=5 },
+    { id:'deep20',        name:'The Abyss Stares Back',     desc:'Reach dungeon depth 20.',          check:()=>player.stats._maxDepth>=20 },
+    { id:'first_spell',   name:'First Weave',               desc:'Cast a spell in combat.',          check:()=>player.stats._spellsCast>=1 },
+    { id:'level10',       name:'Thread Awakened',           desc:'Reach level 10.',                  check:()=>player.level>=10 },
+    { id:'level50',       name:'Brim Veteran',              desc:'Reach level 50.',                  check:()=>player.level>=50 },
+    { id:'boss1',         name:'Grand Trilby Falls',         desc:'Defeat the Grand Trilby.',         check:()=>player.stats._bossesDefeated>=1 },
+    { id:'full_gear',     name:'Fully Hatted',              desc:'Fill all 5 hat gear slots.',       check:()=>player.equippedGear&&HAT_SLOTS.every(s=>player.equippedGear[s]) },
+    { id:'first_craft',   name:'The Forge Awakens',         desc:'Craft thy first hat part.',        check:()=>player.stats._craftCount>=1 },
+    { id:'rich',          name:'Flush with Stitches',       desc:'Hold 1000 Stitches at once.',      check:()=>player.gold>=1000 },
+    { id:'evo1',          name:'First Awakening',           desc:'Choose thy first evolution path.', check:()=>player.evolutionPath.length>=1 },
+];
+
+function checkAchievements() {
+    if(!player.achievements) player.achievements=[];
+    ACHIEVEMENTS.forEach(ach=>{
+        if(!player.achievements.includes(ach.id)&&ach.check()) {
+            player.achievements.push(ach.id);
+            showAchievementToast(`🏅 Achievement: ${ach.name}`);
+        }
+    });
+}
+
+function showAchievementToast(msg) {
+    const toast=document.createElement('div');
+    toast.className='achievement-toast';
+    toast.textContent=msg;
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),3500);
+}
+
+// Hook achievement checks into key moments
+const _origSavePlayer=savePlayer;
+savePlayer=function() {
+    if(!player.stats) player.stats={};
+    player.stats._maxDepth=Math.max(player.stats._maxDepth||0,dungeonDepth);
+    _origSavePlayer();
+    checkAchievements();
+};
+
+// Patch updateHub to show rank
+const _origUpdateHub=updateHub;
+updateHub=function() {
+    _origUpdateHub();
+    const rank=getCouncilRank();
+    const rankEl=document.getElementById('hub-evo-title');
+    if(rankEl) {
+        const evoLabel=player.evolutionPath.length>0?` · ${getEvoTitle()}`:'';
+        rankEl.innerHTML=`<span class="rank-badge">${rank.name}</span>${evoLabel}`;
+    }
+    updateHubConsumables();
+};
+
+// Add consumable display to hub (inject after traits div)
+window.addEventListener('load',()=>{
+    const traitsDiv=document.getElementById('hub-traits');
+    if(traitsDiv) {
+        const section=document.createElement('div');
+        section.style.cssText='margin-top:12px;padding:10px;border:1px solid var(--gold);background:rgba(0,0,0,0.03);';
+        section.innerHTML='<div class="cinzel">🧪 Consumables</div>';
+        const cont=document.createElement('div');
+        cont.id='hub-consumables';
+        section.appendChild(cont);
+        traitsDiv.parentNode.insertBefore(section,traitsDiv.nextSibling);
+    }
+},true);
 </script>
 </body>
 </html>
