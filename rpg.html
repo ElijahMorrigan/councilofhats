@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Council of Hats — RPG System</title>
+    <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --parchment: #f4e4c1;
+            --ink: #2c1a0e;
+            --dark-red: #6b1a1a;
+            --gold: #8b6914;
+            --border: #5c3d1e;
+        }
+
+        body {
+            background-color: #1a0f0a;
+            font-family: 'IM Fell English', serif;
+            color: var(--ink);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--parchment);
+            border: 8px double var(--border);
+            padding: 40px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        h1, h2 { font-family: 'UnifrakturMaguntia', cursive; color: var(--dark-red); text-align: center; }
+        .cinzel { font-family: 'Cinzel', serif; letter-spacing: 2px; }
+
+        /* --- SCREEN MANAGEMENT --- */
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.5s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- CHARACTER CREATION --- */
+        .class-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .class-card {
+            border: 1px solid var(--gold);
+            padding: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            background: rgba(139, 105, 20, 0.05);
+            text-align: center;
+        }
+
+        .class-card:hover, .class-card.selected {
+            background: var(--gold);
+            color: white;
+        }
+
+        /* --- STATS --- */
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            background: rgba(0,0,0,0.05);
+            padding: 15px;
+            border: 1px dashed var(--ink);
+        }
+
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--dark-red); }
+
+        /* --- DICE --- */
+        .dice-area {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid var(--dark-red);
+        }
+
+        .d20 {
+            width: 80px;
+            height: 80px;
+            background: var(--dark-red);
+            color: white;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .d20:active { transform: scale(0.9) rotate(20deg); }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--dark-red);
+            color: var(--parchment);
+            border: none;
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .btn:hover { background: var(--ink); }
+
+        .log {
+            height: 100px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.1);
+            padding: 10px;
+            font-size: 0.9rem;
+            border: 1px solid var(--gold);
+            margin-top: 10px;
+        }
+
+        .nav-back {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            color: var(--gold);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <a href="index.html" class="nav-back">⬅ Return to Headquarters</a>
+
+        <!-- SCREEN 1: CREATION -->
+        <div id="screen-creation" class="screen active">
+            <h1>Character Manifestation</h1>
+            <p style="text-align:center">Select your Hat Class and roll for fate.</p>
+
+            <input type="text" id="char-name" placeholder="Enter Thy Name..." style="width:100%; padding:10px; font-family:serif; font-size:1.2rem; margin-bottom:10px;">
+
+            <div class="class-grid">
+                <div class="class-card" onclick="selectClass('Brim Paladin')">
+                    <strong>Brim Paladin</strong><br><small>High Defense, Holy Auras</small>
+                </div>
+                <div class="class-card" onclick="selectClass('Shadow Beanie')">
+                    <strong>Shadow Beanie</strong><br><small>Stealth, Critical Hits</small>
+                </div>
+                <div class="class-card" onclick="selectClass('Sombrero Sage')">
+                    <strong>Sombrero Sage</strong><br><small>Magic, Area Damage</small>
+                </div>
+                <div class="class-card" onclick="selectClass('Chaotic Trilby')">
+                    <strong>Chaotic Trilby</strong><br><small>Random Powers (Risky)</small>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startRolling()">Manifest My Fate</button>
+        </div>
+
+        <!-- SCREEN 2: STAT ROLLING -->
+        <div id="screen-rolling" class="screen">
+            <h1 id="display-name">The Aspirant</h1>
+            <h2 id="display-class" class="cinzel" style="font-size: 0.8rem;">CLASS</h2>
+
+            <div class="stats-display">
+                <div class="stat-box"><div>BRIM</div><div id="stat-brim" class="stat-val">?</div></div>
+                <div class="stat-box"><div>STYLE</div><div id="stat-style" class="stat-val">?</div></div>
+                <div class="stat-box"><div>TILT</div><div id="stat-tilt" class="stat-val">?</div></div>
+                <div class="stat-box"><div>CROWN</div><div id="stat-crown" class="stat-val">?</div></div>
+                <div class="stat-box"><div>LINING</div><div id="stat-lining" class="stat-val">?</div></div>
+                <div class="stat-box"><div>WEIGHT</div><div id="stat-weight" class="stat-val">?</div></div>
+            </div>
+
+            <div class="dice-area">
+                <div class="d20" id="main-die" onclick="rollStats()">?</div>
+                <p id="roll-instruction">Click the D20 to roll your stats!</p>
+            </div>
+
+            <div id="roll-log" class="log">Welcome, Initiate.</div>
+
+            <button id="btn-save-char" class="btn" style="display:none;" onclick="saveAndEnter()">Enter the World</button>
+        </div>
+
+        <!-- SCREEN 3: GAME HUB -->
+        <div id="screen-hub" class="screen">
+            <h1 id="hub-name">Character Name</h1>
+            <div id="hub-stats" style="font-size: 0.8rem; text-align: center;" class="cinzel"></div>
+            <hr>
+            <div class="dice-area">
+                <div class="d20" onclick="gameRoll()">🎲</div>
+                <p>Action Roll</p>
+            </div>
+            <div id="game-log" class="log">You stand before the Council. What is your move?</div>
+            <button class="btn" onclick="alert('The World Map is being woven by spiders... Phase 2 coming soon!')">Explore the Channels</button>
+            <button class="btn" style="background:#444" onclick="resetGame()">Start New Journey</button>
+        </div>
+    </div>
+
+    <script>
+        let character = {
+            name: "",
+            class: "",
+            stats: { brim: 0, style: 0, tilt: 0, crown: 0, lining: 0, weight: 0 },
+            level: 1,
+            exp: 0
+        };
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function selectClass(className) {
+            character.class = className;
+            document.querySelectorAll('.class-card').forEach(c => {
+                c.classList.remove('selected');
+                if(c.innerText.includes(className)) c.classList.add('selected');
+            });
+        }
+
+        function startRolling() {
+            character.name = document.getElementById('char-name').value || "Unnamed Hat";
+            if(!character.class) return alert("Select a Hat Class first!");
+            
+            document.getElementById('display-name').innerText = character.name;
+            document.getElementById('display-class').innerText = character.class;
+            showScreen('screen-rolling');
+        }
+
+        let rollsDone = 0;
+        const statKeys = ['brim', 'style', 'tilt', 'crown', 'lining', 'weight'];
+
+        function rollStats() {
+            if(rollsDone >= 6) return;
+
+            let roll = Math.floor(Math.random() * 20) + 1;
+            let currentStat = statKeys[rollsDone];
+            character.stats[currentStat] = roll;
+
+            document.getElementById(`stat-${currentStat}`).innerText = roll;
+            document.getElementById('roll-log').innerHTML += `<li>Rolled ${roll} for ${currentStat.toUpperCase()}</li>`;
+            
+            rollsDone++;
+
+            if(rollsDone === 6) {
+                document.getElementById('roll-instruction').innerText = "Fate has been sealed.";
+                document.getElementById('btn-save-char').style.display = "block";
+            }
+        }
+
+        function saveAndEnter() {
+            localStorage.setItem('hatRPG_char', JSON.stringify(character));
+            setupHub();
+            showScreen('screen-hub');
+        }
+
+        function setupHub() {
+            const saved = JSON.parse(localStorage.getItem('hatRPG_char'));
+            if(!saved) return;
+            document.getElementById('hub-name').innerText = saved.name;
+            document.getElementById('hub-stats').innerText = `${saved.class} | LVL ${saved.level} | BRIM: ${saved.stats.brim} STYLE: ${saved.stats.style}`;
+        }
+
+        function gameRoll() {
+            let roll = Math.floor(Math.random() * 20) + 1;
+            let msg = "";
+            if(roll === 20) msg = "CRITICAL BRIM! The Council is impressed.";
+            else if(roll === 1) msg = "HAT SLIP! You stumble in shame.";
+            else msg = `You rolled a ${roll}.`;
+            
+            document.getElementById('game-log').innerHTML = `<div>${msg}</div>` + document.getElementById('game-log').innerHTML;
+        }
+
+        function resetGame() {
+            if(confirm("Abandon your current hat and journey?")) {
+                localStorage.removeItem('hatRPG_char');
+                location.reload();
+            }
+        }
+
+        // Check for existing character on load
+        window.onload = () => {
+            const saved = localStorage.getItem('hatRPG_char');
+            if(saved) {
+                character = JSON.parse(saved);
+                setupHub();
+                showScreen('screen-hub');
+            }
+        }
+    </script>
+</body>
+</html>
