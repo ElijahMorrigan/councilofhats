@@ -3,57 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Council of Hats — The Grand Loom</title>
+    <title>Council of Hats — Complete Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --parchment: #f4e4c1; --ink: #2c1a0e; --dark-red: #6b1a1a; --gold: #8b6914; --border: #5c3d1e; --mana: #2a4d69; }
         body { background-color: #1a0f0a; font-family: 'IM Fell English', serif; color: var(--ink); margin: 0; display: flex; justify-content: center; padding: 20px; font-size: 16px; }
-        
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 5px; }
-
         .game-container { max-width: 1000px; width: 100%; background: var(--parchment); border: 8px double var(--border); padding: 30px; box-shadow: 0 0 50px rgba(0,0,0,0.5); position: relative; min-height: 90vh; }
-        h1, h2, h3 { font-family: 'UnifrakturMaguntia', cursive; color: var(--dark-red); text-align: center; margin: 5px 0; }
+        h1, h2, h3 { font-family: 'UnifrakturMaguntia', cursive; color: var(--dark-red); text-align: center; margin: 10px 0; }
         .cinzel { font-family: 'Cinzel', serif; letter-spacing: 1px; text-transform: uppercase; font-size: 0.8rem; font-weight: bold; }
-        
         .screen { display: none; }
         .screen.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* CREATION LAYOUT */
-        .creation-layout { display: grid; grid-template-columns: 250px 1fr 300px; gap: 15px; }
-        .info-box { background: var(--ink); color: var(--parchment); padding: 15px; border: 2px solid var(--gold); font-size: 0.85rem; height: 350px; overflow-y: auto; line-height: 1.6; }
-        
-        .list-window { height: 250px; overflow-y: auto; border: 1px solid var(--gold); background: rgba(255,255,255,0.2); }
-        .selectable { padding: 8px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 0.8rem; transition: 0.2s; }
-        .selectable:hover { background: var(--gold); color: white; }
-        .selectable.selected { background: var(--dark-red); color: white; }
-
-        /* BARS */
-        .bar-wrap { height: 14px; background: #ccc; border: 1px solid var(--ink); margin: 5px 0; position: relative; border-radius: 3px; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.4s ease-in-out; }
-        .hp-fill { background: linear-gradient(90deg, #8b1a1a, #ff4d4d); }
-        .mana-fill { background: linear-gradient(90deg, #1a3a5a, #4a90e2); }
-        .bar-text { position: absolute; width: 100%; text-align: center; font-size: 0.6rem; color: white; font-weight: bold; line-height: 14px; text-shadow: 1px 1px black; }
-
-        /* BATTLE */
-        .battle-grid { display: grid; grid-template-columns: 1fr 100px 1fr; gap: 20px; align-items: center; margin: 20px 0; }
-        .fighter-card { text-align: center; padding: 15px; background: rgba(0,0,0,0.03); border: 1px solid var(--gold); }
-        .battle-log { height: 120px; overflow-y: auto; background: #e2d1a8; padding: 10px; font-size: 0.8rem; border: 1px solid var(--gold); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
-
-        /* RUNE LOOM */
-        .rune-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .rune-inv-block { height: 100px; overflow-y: auto; border: 1px solid var(--gold); background: white; padding: 5px; }
-        .rune-chip { display: inline-block; padding: 3px 6px; background: var(--ink); color: white; font-size: 0.7rem; margin: 2px; cursor: pointer; border: 1px solid transparent; }
-        .rune-chip.selected { border-color: var(--gold); background: var(--dark-red); }
-
-        .btn { display: block; width: 100%; padding: 12px; background: var(--dark-red); color: white; border: 1px solid var(--gold); font-family: 'Cinzel'; cursor: pointer; text-align: center; margin: 5px 0; transition: 0.2s; }
-        .btn:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .stats-display { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.05); padding: 15px; border: 1px dashed var(--ink); }
+        .stat-val { font-size: 1.1rem; font-weight: bold; color: var(--dark-red); }
+        .btn { display: block; width: 100%; padding: 12px; background: var(--dark-red); color: white; border: 1px solid var(--gold); font-family: 'Cinzel'; cursor: pointer; margin: 5px 0; text-align: center; }
+        .btn:hover:not(:disabled) { filter: brightness(1.2); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
         .nav-back { position: absolute; top: 10px; left: 10px; color: var(--gold); text-decoration: none; font-size: 0.7rem; }
+        .creation-layout { display: grid; grid-template-columns: 1fr 1fr 300px; gap: 15px; }
+        .info-box { background: var(--ink); color: var(--parchment); padding: 15px; border: 2px solid var(--gold); height: 400px; overflow-y: auto; }
+        .list-window { height: 250px; overflow-y: auto; border: 1px solid var(--gold); background: rgba(255,255,255,0.2); }
+        .selectable { padding: 8px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.1); transition: 0.2s; }
+        .selectable:hover { background: rgba(139, 105, 20, 0.2); }
+        .selectable.selected { background: var(--dark-red); color: white; }
+        .bar-wrap { height: 12px; background: #ccc; border: 1px solid var(--ink); margin: 5px 0; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+        .hp-fill { background: var(--dark-red); }
+        .mana-fill { background: var(--mana); }
+        .battle-log { height: 120px; overflow-y: auto; background: #e2d1a8; padding: 10px; font-size: 0.8rem; border: 1px solid var(--gold); margin: 10px 0; }
+        .rune-inv { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; border: 1px solid var(--gold); min-height: 60px; }
+        .rune-chip { background: var(--ink); color: var(--parchment); padding: 5px 8px; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--gold); transition: 0.2s; }
+        .rune-chip:hover { background: var(--dark-red); }
+        .spell-card { background: rgba(139, 105, 20, 0.1); border: 1px solid var(--gold); padding: 10px; margin: 5px 0; }
     </style>
 </head>
 <body>
@@ -61,399 +43,451 @@
 <div class="game-container">
     <a href="index.html" class="nav-back">⬅ RETURN TO HQ</a>
 
-    <!-- SCREEN: CREATION -->
+    <!-- CREATION SCREEN -->
     <div id="screen-creation" class="screen active">
-        <h1>The Manifestation Tome</h1>
+        <h1>Manifestation of the Soul</h1>
         <div class="creation-layout">
             <div>
-                <div class="cinzel">Identity</div>
-                <input type="text" id="char-name" placeholder="Name..." style="width:100%; padding:8px; margin-bottom:10px; border:1px solid var(--gold);">
-                <div class="cinzel">Class Weave</div>
-                <div class="list-window" id="class-list-cont"></div>
+                <label class="cinzel">Thy Name</label>
+                <input type="text" id="char-name" placeholder="Enter name..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--gold)">
+                <label class="cinzel">Hat Class</label>
+                <div class="list-window" id="class-list"></div>
+                <label class="cinzel">Advantages</label>
+                <div class="list-window" id="adv-list"></div>
             </div>
             <div>
-                <div class="cinzel">Advantages & Flaws</div>
-                <div class="list-window" id="trait-list-cont" style="height:335px"></div>
-                <div style="text-align:center; padding:10px; border:2px double var(--dark-red); margin-top:10px">
-                    <span class="cinzel">Creation Balance</span><br>
-                    <span id="creation-points" style="font-size:2rem; color:var(--dark-red)">10</span>
+                <label class="cinzel">Disadvantages</label>
+                <div class="list-window" id="dis-list"></div>
+                <div style="text-align:center; margin-top:20px; padding:15px; background:rgba(139, 105, 20, 0.1); border:2px double var(--dark-red)">
+                    <span class="cinzel">Soul Balance</span><br>
+                    <span id="balance-points" style="font-size:2.5rem; color:var(--dark-red); font-weight:bold">10</span><br>
+                    <small>Balance ≥ 0 to proceed</small>
                 </div>
             </div>
             <div>
-                <div class="cinzel">Tome of Knowledge</div>
-                <div class="info-box" id="info-tome">Hover over threads to reveal their secrets...</div>
-                <button class="btn" onclick="goToStats()" style="margin-top:20px">Step into the Void</button>
+                <h3 class="cinzel">Codex of Knowledge</h3>
+                <div class="info-box" id="codex-box">Hover over any class or trait to reveal its lore, mechanics, and secrets of the brim...</div>
+                <button class="btn" onclick="commitSoul()">Weave Thy Destiny</button>
             </div>
         </div>
     </div>
 
-    <!-- SCREEN: STATS -->
+    <!-- STATS SCREEN -->
     <div id="screen-stats" class="screen">
-        <h1>Rolling the Bones</h1>
-        <div id="stat-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px"></div>
-        <div style="text-align:center; padding:20px">
-            <div id="dice-visual" style="font-size:4rem">🎲</div>
-            <button class="btn" id="btn-roll" onclick="rollStat()">Roll Thread</button>
+        <h1>The Rolling of Threads</h1>
+        <div class="stats-display" id="stats-grid"></div>
+        <div style="text-align:center">
+            <div style="font-size:3rem; margin-bottom:10px">🎲</div>
+            <button class="btn" id="roll-btn" onclick="rollThread()">Roll Next Stat</button>
+            <button class="btn" id="finish-btn" style="display:none" onclick="finalizeCharacter()">Enter the Council</button>
         </div>
-        <button class="btn" id="btn-start" style="display:none" onclick="finalizeHero()">Begin Journey</button>
     </div>
 
-    <!-- SCREEN: HUB -->
+    <!-- HUB SCREEN -->
     <div id="screen-hub" class="screen">
-        <h1 id="hub-name">Name</h1>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+        <h1 id="player-name">Initiate</h1>
+        <div class="grid-2">
             <div>
-                <button class="btn" onclick="enterDungeon()">Delve into Dungeons</button>
-                <button class="btn" onclick="showScreen('screen-spellmaker')">The Rune Loom</button>
-                <button class="btn" onclick="showScreen('screen-spellbook')">Spellbook</button>
+                <button class="btn" onclick="enterDungeon()">Enter the Deep Threads</button>
+                <button class="btn" onclick="openLoom()">Rune Loom</button>
+                <button class="btn" onclick="openSpellbook()">Spellbook</button>
             </div>
-            <div id="hub-stats" style="font-size:0.8rem; background:rgba(0,0,0,0.05); padding:10px; border:1px dashed var(--gold)"></div>
+            <div>
+                <div class="stats-display" id="hub-stats-grid"></div>
+                <div style="text-align:center; padding:10px; border:1px solid var(--gold)">
+                    <span class="cinzel">Stitches</span><br>
+                    <span id="hub-stitches" style="font-size:1.5rem; color:var(--gold)">0</span>
+                </div>
+            </div>
         </div>
-        <div style="text-align:center; margin-top:20px" class="cinzel">Stitches: <span id="hub-gold" style="color:var(--gold)">0</span></div>
-        <button class="btn" style="background:#444; margin-top:30px" onclick="resetGame()">Forsake this Soul</button>
+        <button class="btn" style="background:#444; margin-top:20px" onclick="resetJourney()">Unravel Soul</button>
     </div>
 
-    <!-- SCREEN: COMBAT -->
+    <!-- COMBAT SCREEN -->
     <div id="screen-combat" class="screen">
-        <h2 id="combat-title">A Duel Begins</h2>
-        <div class="battle-grid">
-            <div class="fighter-card">
-                <span id="p-icon" style="font-size:3rem">🎩</span><br>
-                <div class="bar-wrap"><div id="p-hp" class="bar-fill hp-fill"></div><div class="bar-text" id="p-hp-text"></div></div>
-                <div class="bar-wrap"><div id="p-mana" class="bar-fill mana-fill"></div><div class="bar-text" id="p-mana-text"></div></div>
+        <h2 id="combat-enemy-name">Fiend Appears</h2>
+        <div class="grid-2">
+            <div style="text-align:center">
+                <span id="player-icon" style="font-size:3rem">🎩</span>
+                <div class="bar-wrap"><div id="player-hp-bar" class="bar-fill hp-fill"></div></div>
+                <div class="bar-wrap"><div id="player-mana-bar" class="bar-fill mana-fill"></div></div>
             </div>
-            <div style="text-align:center; font-family:Cinzel; color:var(--dark-red); font-size:1.5rem">VS</div>
-            <div class="fighter-card">
-                <span id="e-icon" style="font-size:3rem">👤</span><br>
-                <div class="bar-wrap"><div id="e-hp" class="bar-fill hp-fill"></div><div class="bar-text" id="e-hp-text"></div></div>
-                <small id="e-name">Hatless Fiend</small>
+            <div style="text-align:center">
+                <span id="enemy-icon" style="font-size:3rem">👤</span>
+                <div class="bar-wrap"><div id="enemy-hp-bar" class="bar-fill hp-fill"></div></div>
             </div>
         </div>
-        <div id="b-log" class="battle-log"></div>
-        <div id="battle-actions">
+        <div id="combat-log" class="battle-log"></div>
+        <div id="combat-actions">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-                <button class="btn" onclick="playerAction('atk')">Brim Bash</button>
-                <button class="btn" onclick="playerAction('def')">Brace Hat</button>
+                <button class="btn" onclick="combatAction('bash')">Brim Bash</button>
+                <button class="btn" onclick="combatAction('brace')">Brace Hat</button>
             </div>
-            <div id="spell-buttons" style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:5px"></div>
+            <div id="combat-spells" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:5px; margin-top:10px"></div>
         </div>
-        <div id="loot-screen" style="display:none; text-align:center; padding:20px; border:2px solid var(--gold); background:rgba(0,0,0,0.05)">
-            <h3>SPOILS CLAIMED</h3>
-            <p id="loot-text"></p>
-            <button class="btn" onclick="exitCombat()">Return Victorious</button>
+        <div id="combat-loot" style="display:none; text-align:center; padding:20px; border:2px solid var(--gold)">
+            <h3>Victory! Spoils Claimed</h3>
+            <div id="loot-details"></div>
+            <button class="btn" onclick="endCombat()">Continue Deeper</button>
         </div>
     </div>
 
-    <!-- SCREEN: SPELLMAKER -->
-    <div id="screen-spellmaker" class="screen">
-        <h1>The Loom of Runes</h1>
-        <div class="rune-grid">
-            <div><div class="cinzel">Effect</div><div id="inv-e" class="rune-inv-block"></div></div>
-            <div><div class="cinzel">Delivery</div><div id="inv-d" class="rune-inv-block"></div></div>
-            <div><div class="cinzel">Potency</div><div id="inv-p" class="rune-inv-block"></div></div>
-        </div>
-        <div style="margin-top:20px; padding:15px; background:rgba(0,0,0,0.05); border:1px solid var(--gold)">
-            <h3 id="weave-name">New Weave</h3>
-            <p id="weave-desc" style="font-style:italic">Select three runes to bind a spell.</p>
-            <input type="text" id="spell-input-name" placeholder="Name the spell..." style="width:100%; padding:10px; margin-bottom:10px">
-            <button class="btn" onclick="bindSpell()">Bind Spell to Soul</button>
+    <!-- LOOM SCREEN -->
+    <div id="screen-loom" class="screen">
+        <h1>The Rune Loom</h1>
+        <p style="text-align:center; font-style:italic">Why Runes Exist: In the Year of the Brim, the Chaos God shattered the Great Loom. Fragments became Runes. Only by defeating Hatless Fiends can you reclaim them. Each Rune is unique—deconstruct spells to recover them.</p>
+        <div class="grid-2">
+            <div>
+                <h3 class="cinzel">Effect Runes</h3>
+                <div id="effect-runes" class="rune-inv"></div>
+                <h3 class="cinzel">Delivery Runes</h3>
+                <div id="delivery-runes" class="rune-inv"></div>
+            </div>
+            <div>
+                <h3 class="cinzel">Potency Runes</h3>
+                <div id="potency-runes" class="rune-inv"></div>
+                <div id="loom-preview" style="padding:15px; border:1px solid var(--gold); background:rgba(0,0,0,0.05); margin-top:10px">
+                    <h4 id="preview-title">Select Runes</h4>
+                    <p id="preview-desc">Hover runes for details. Click to select for weaving.</p>
+                    <input id="spell-name-input" placeholder="Spell Name" style="width:100%; padding:8px; margin:10px 0">
+                    <button class="btn" onclick="weaveSpell()">Weave Spell</button>
+                </div>
+            </div>
         </div>
         <button class="btn" style="background:#444" onclick="showScreen('screen-hub')">Return</button>
     </div>
 
-    <!-- SCREEN: SPELLBOOK -->
+    <!-- SPELLBOOK SCREEN -->
     <div id="screen-spellbook" class="screen">
-        <h1>Spellbook</h1>
-        <div id="book-cont"></div>
+        <h1>Spellbook of the Council</h1>
+        <div id="spellbook-list"></div>
         <button class="btn" style="background:#444" onclick="showScreen('screen-hub')">Return</button>
     </div>
+
 </div>
 
 <script>
-// --- MASTER DATA ---
-const classes = [
-    { id:'paladin', name:'Brim Paladin', icon:'🎩', bonus:{brim:10, weight:8}, desc:'The Bulwark. High defense and health. Physical attacks are weighted by Brim.' },
-    { id:'rogue', name:'Shadow Beanie', icon:'🧢', bonus:{tilt:10, style:5}, desc:'Stitch-thief. High dodge and style. Critical hits deal massive damage.' },
-    { id:'sage', name:'Sombrero Sage', icon:'🧙', bonus:{crown:10, lining:5}, desc:'Wide-brimmed wizard. High mana and magic resistance.' },
-    { id:'trilby', name:'Chaotic Trilby', icon:'🕴️', bonus:{crown:15, weight:-5}, desc:'Cursed wildcard. Powerful magic but fragile hat integrity.' }
+const CLASSES = [
+    {id: 'brim_paladin', name: 'Brim Paladin', icon: '🎩', bonus: {brim: 5, weight: 3}, desc: 'Tank class. High defense and HP. "Holy Brim Judgement" special.'},
+    {id: 'shadow_beanie', name: 'Shadow Beanie', icon: '🧢', bonus: {tilt: 5, style: 3}, desc: 'Rogue class. High dodge and crits. "Hat Snatch" steals enemy stats.'},
+    {id: 'sombrero_sage', name: 'Sombrero Sage', icon: '🪖', bonus: {crown: 5, lining: 3}, desc: 'Mage class. High mana and spells. "El Sombrero Supremo" AoE.'},
+    {id: 'chaotic_trilby', name: 'Chaotic Trilby', icon: '🕴️', bonus: {crown: 8, lining: -2}, desc: 'Random class. Unpredictable effects. "Chaos Brim" anything can happen.'},
+    {id: 'top_hat_tycoon', name: 'Top Hat Tycoon', icon: '💼', bonus: {style: 8}, desc: 'Diplomat. High charisma and gold. "Parade Command" buffs allies.'},
+    {id: 'bowler_bruiser', name: 'Bowler Bruiser', icon: '🥊', bonus: {weight: 8, brim: 2}, desc: 'Melee DPS. High strength attacks. "Brim Slam" heavy single target.'},
+    {id: 'beret_artist', name: 'Beret Artist', icon: '🎨', bonus: {crown: 4, style: 4}, desc: 'Support. Low mana cost spells. "Inspire Hat" ally buffs.'},
+    {id: 'bucket_fisher', name: 'Bucket Fisher', icon: '🪣', bonus: {lining: 6, tilt: 2}, desc: 'Survivor. High resistance and luck. "Flood Brim" status cleanse.'}
 ];
 
-const traits = [
-    { id:'regen', name:'Brim Regen', type:'adv', cost:6, desc:'Heal 5 HP at the start of every turn. (Requires high Lining)' },
-    { id:'luck', name:'Plumed Luck', type:'adv', cost:4, desc:'+2 bonus to every D20 roll in combat.' },
-    { id:'tough', name:'Iron Felt', type:'adv', cost:5, desc:'Gain +30 Max HP permanently.' },
-    { id:'phobia', name:'Hatless Phobia', type:'dis', bonus:6, desc:'Take double damage from hatless foes.' },
-    { id:'weak', name:'Flimsy Stitch', type:'dis', bonus:5, desc:'-20 Max HP permanently.' },
-    { id:'heavy', name:'Heavy Crown', type:'dis', bonus:4, desc:'-5 to all Dodge rolls.' }
+const ADVANTAGES = [
+    {id: 'regen', name: 'Brim Regeneration', cost: 5, desc: 'Heals 5 HP per turn start. "Threads knit themselves."' },
+    {id: 'manawell', name: 'Mana Well', cost: 4, desc: '50% more max mana. "Deep reservoirs of weave energy."' },
+    {id: 'legendary', name: 'Legendary Lineage', cost: 8, desc: '+4 to all stat rolls. "Born of Darkneblade\'s court."' },
+    {id: 'luck', name: 'Plumed Luck', cost: 3, desc: '+2 to all D20 rolls. "Feather brings fortune."' },
+    {id: 'rich', name: 'Hidden Stash', cost: 3, desc: 'Start with 300 Stitches. "Forgotten council treasury."' },
+    {id: 'fast', name: 'Quick Stitch', cost: 5, desc: 'Double action first turn. "Swift hands."' },
+    {id: 'tough', name: 'Iron Threading', cost: 6, desc: '+20 Max HP. "Unbreakable felt."' },
+    {id: 'savant', name: 'Spell Savant', cost: 5, desc: 'Spells cost 20% less mana. "Innate weave mastery."' },
+    {id: 'sharp', name: 'Sharp Eyes', cost: 4, desc: 'Brim Bash +15% damage. "Sees weak threads."' },
+    {id: 'safety', name: 'Safety Pin', cost: 4, desc: 'Survive lethal blow once/combat. "Last thread holds."' }
 ];
 
-const runeBank = {
-    effect: [
-        { id:'ignite', name:'Ignite', power:15, mana:10, type:'Offense', desc:'Sets threads on fire. High damage.' },
-        { id:'mend', name:'Mend', power:-12, mana:12, type:'Heal', desc:'Knits hat integrity back together.' }
-    ],
-    delivery: [
-        { id:'touch', name:'Hand-Stitched', mult:1.0, mana:0, desc:'Standard power.' },
-        { id:'storm', name:'Storm-Woven', mult:1.5, mana:8, desc:'High mana, high impact.' }
-    ],
-    potency: [
-        { id:'faded', name:'Faded', mult:0.7, mana:-4, desc:'Low cost, low power.' },
-        { id:'pure', name:'Royal', mult:1.3, mana:10, desc:'Pristine power.' }
-    ]
-};
+const DISADVANTAGES = [
+    {id: 'phobia', name: 'Hatless Phobia', bonus: 6, desc: 'Double damage from hatless enemies. "Fear the bare head."' },
+    {id: 'weak', name: 'Flimsy Stitching', bonus: 5, desc: '-20 Max HP. "Threads fray easily."' },
+    {id: 'unlucky', name: 'Chaos Curse', bonus: 7, desc: '-3 to stat rolls. "Chaos God\'s disfavor."' },
+    {id: 'poor', name: 'Debt to Toffee', bonus: 4, desc: '50% less loot gold. "Owed council tithes."' },
+    {id: 'clumsy', name: 'Slippery Brim', bonus: 5, desc: '10% chance skip turn. "Hat tilts wrong."' },
+    {id: 'social', name: 'Fashion Outcast', bonus: 4, desc: 'Shop prices +30%. "Mocked by merchants."' },
+    {id: 'fragile', name: 'Glass Crown', bonus: 6, desc: 'Mana regen 50% slower. "Fragile weave core."' },
+    {id: 'heavy', name: 'Lead-Lined', bonus: 5, desc: '-5 Tilt dodge. "Cannot move fast."' },
+    {id: 'shame', name: 'Public Shame', bonus: 5, desc: 'Style stat = 1. "Council scorns your look."' },
+    {id: 'blind', name: 'Low Brim', bonus: 4, desc: '10% miss chance. "Vision obscured."' }
+];
 
-// --- CORE STATE ---
-let p = { 
-    name:"", class:null, stats:{}, traits:[], 
-    runes:{e:['ignite'], d:['touch'], p:['faded']}, 
-    spells:[], gold:100, hp:100, maxHp:100, mana:50, maxMana:50, level:1, exp:0 
+let player = {
+    name: '', class: null, stats: {}, traits: [], runes: {effect: [], delivery: [], potency: []}, spells: [],
+    gold: 50, hp: 100, maxHp: 100, mana: 50, maxMana: 50, level: 1, defending: false
 };
-let curPts = 10;
-let statIdx = 0;
-const sk = ['brim','style','tilt','crown','lining','weight'];
-let activeWeave = {e:null, d:null, p:null};
-let en = null;
+let currentBalance = 10;
+let rollIndex = 0;
+let enemy = null;
 
-// --- INITIALIZATION ---
-window.onload = () => {
-    const cCont = document.getElementById('class-list-cont');
-    classes.forEach(c => {
-        let el = document.createElement('div'); el.className='selectable'; el.innerText=c.name;
-        el.onmouseover = () => document.getElementById('info-tome').innerHTML = `<h3>${c.name}</h3><p>${c.desc}</p>`;
-        el.onclick = () => { p.class = c; Array.from(cCont.children).forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); };
-        cCont.appendChild(el);
+function populateCreation() {
+    const classList = document.getElementById('class-list');
+    CLASSES.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'selectable';
+        div.innerHTML = `<span>${c.icon}</span> ${c.name}`;
+        div.onmouseover = () => {
+            document.getElementById('codex-box').innerHTML = `<strong>${c.name}</strong><br>${c.desc}<br><small>Bonus: ${Object.entries(c.bonus).map(([k,v]) => `${k}: +${v}`).join(', ')}</small>`;
+        };
+        div.onclick = () => selectClass(c);
+        classList.appendChild(div);
     });
 
-    const tCont = document.getElementById('trait-list-cont');
-    traits.forEach(t => {
-        let el = document.createElement('div'); el.className='selectable'; el.innerText=`${t.name} (${t.type==='adv'?'+':'-'}${t.type==='adv'?t.cost:t.bonus})`;
-        el.onmouseover = () => document.getElementById('info-tome').innerHTML = `<h3>${t.name}</h3><p>${t.desc}</p>`;
-        el.onclick = () => toggleTrait(t, el);
-        tCont.appendChild(el);
+    const advList = document.getElementById('adv-list');
+    ADVANTAGES.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'selectable';
+        div.textContent = `${a.name} (+${a.cost})`;
+        div.onmouseover = () => {
+            document.getElementById('codex-box').innerHTML = `<strong>${a.name}</strong><br>${a.desc}<br><small>Cost: ${a.cost} points</small>`;
+        };
+        div.onclick = () => toggleTrait(a, div, true);
+        advList.appendChild(div);
     });
 
-    const saved = localStorage.getItem('hatRPG_master_loom');
-    if(saved) { p = JSON.parse(saved); showScreen('screen-hub'); }
-};
+    const disList = document.getElementById('dis-list');
+    DISADVANTAGES.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'selectable';
+        div.textContent = `${d.name} (-${d.bonus})`;
+        div.onmouseover = () => {
+            document.getElementById('codex-box').innerHTML = `<strong>${d.name}</strong><br>${d.desc}<br><small>Bonus: +${d.bonus} points</small>`;
+        };
+        div.onclick = () => toggleTrait(d, div, false);
+        disList.appendChild(div);
+    });
+}
 
-function toggleTrait(t, el) {
-    if(p.traits.includes(t.id)) {
-        p.traits = p.traits.filter(x=>x!==t.id);
-        curPts += (t.type==='adv'?t.cost:-t.bonus);
-        el.classList.remove('selected');
+function selectClass(c) {
+    player.class = c;
+    document.querySelectorAll('#class-list .selectable').forEach(d => d.classList.remove('selected'));
+    event.target.closest('.selectable').classList.add('selected');
+}
+
+function toggleTrait(t, div, isAdv) {
+    const idx = player.traits.indexOf(t.id);
+    if (idx > -1) {
+        player.traits.splice(idx, 1);
+        currentBalance += isAdv ? t.cost : -t.bonus;
+        div.classList.remove('selected');
     } else {
-        if(t.type==='adv' && curPts < t.cost) return alert("Not enough creation points!");
-        p.traits.push(t.id);
-        curPts -= (t.type==='adv'?t.cost:-t.bonus);
-        el.classList.add('selected');
+        if (isAdv && currentBalance < t.cost) return alert('Insufficient balance!');
+        player.traits.push(t.id);
+        currentBalance -= isAdv ? t.cost : -t.bonus;
+        div.classList.add('selected');
     }
-    document.getElementById('creation-points').innerText = curPts;
+    document.getElementById('balance-points').textContent = currentBalance;
 }
 
-// --- STAT ROLLING ---
-function goToStats() {
-    p.name = document.getElementById('char-name').value || "Unnamed Initiate";
-    if(!p.class || curPts < 0) return alert("Select a class and balance your threads!");
+function commitSoul() {
+    if (!player.class || currentBalance < 0) return alert('Balance your soul first!');
+    player.name = document.getElementById('char-name').value || 'Nameless Hat';
     showScreen('screen-stats');
-    document.getElementById('stat-grid').innerHTML = sk.map(k => `<div class="stat-box" style="text-align:center; border:1px solid var(--gold); padding:5px"><div>${k.toUpperCase()}</div><div id="s-${k}" class="stat-val" style="font-size:1.5rem">?</div></div>`).join('');
+    rollIndex = 0;
+    populateStats();
 }
 
-function rollStat() {
-    if(statIdx >= sk.length) return;
-    let roll = Math.floor(Math.random()*15)+6; // 6-20
-    p.stats[sk[statIdx]] = roll;
-    document.getElementById(`s-${sk[statIdx]}`).innerText = roll;
-    statIdx++;
-    if(statIdx === sk.length) { document.getElementById('btn-roll').style.display='none'; document.getElementById('btn-start').style.display='block'; }
-}
-
-function finalizeHero() {
-    p.maxHp = 50 + (p.stats.weight * 5) + (p.class.bonus.weight||0);
-    if(p.traits.includes('tough')) p.maxHp += 30;
-    if(p.traits.includes('weak')) p.maxHp -= 20;
-    p.hp = p.maxHp;
-    p.maxMana = 20 + (p.stats.crown * 3) + (p.class.bonus.crown||0);
-    p.mana = p.maxMana;
-    save(); showScreen('screen-hub');
-}
-
-// --- COMBAT ENGINE ---
-function enterDungeon() {
-    en = { name:"Hatless Fiend", icon:"👤", hp:40 + (p.level*15), maxHp:40 + (p.level*15), atk:8 + p.level };
-    document.getElementById('e-hp-text').innerText = en.hp + "/" + en.maxHp;
-    document.getElementById('b-log').innerHTML = "<div>The dungeon threads entangle you! Fight!</div>";
-    
-    // Spell buttons
-    const sBtnCont = document.getElementById('spell-buttons');
-    sBtnCont.innerHTML = p.spells.map((s,i) => `<button class="btn" style="background:var(--mana); font-size:0.6rem" onclick="playerAction('spell', ${i})">${s.name} (${s.mana}MP)</button>`).join('');
-    
-    document.getElementById('battle-actions').style.display = 'block';
-    document.getElementById('loot-screen').style.display = 'none';
-    updateCUI();
-    showScreen('screen-combat');
-}
-
-function playerAction(type, idx) {
-    // 1. Initiative Check (D20)
-    let roll = Math.floor(Math.random()*20)+1;
-    if(p.traits.includes('luck')) roll += 2;
-    
-    let logMsg = "";
-    if(type === 'atk') {
-        let dmg = 5 + Math.floor(p.stats.brim / 3);
-        if(roll === 20) { dmg *= 2; logMsg = "<strong>CRITICAL BRIM!</strong> "; }
-        if(roll === 1) { dmg = 0; logMsg = "<em>Hat Slip!</em> You missed! "; }
-        else { en.hp -= dmg; logMsg += `You bash for ${dmg} damage. (Roll: ${roll})`; }
-    } else if (type === 'def') {
-        logMsg = "You brace your hat, reducing incoming damage by half.";
-        p.defending = true;
-    } else if (type === 'spell') {
-        let s = p.spells[idx];
-        if(p.mana < s.mana) return log("Mana depleted!");
-        p.mana -= s.mana;
-        if(s.power < 0) { p.hp = Math.min(p.maxHp, p.hp + Math.abs(s.power)); logMsg = `You cast ${s.name} and knit ${Math.abs(s.power)} HP.`; }
-        else { en.hp -= s.power; logMsg = `You unleash ${s.name} for ${Math.floor(s.power)} damage.`; }
-    }
-
-    log(logMsg);
-    updateCUI();
-    if(en.hp <= 0) return winCombat();
-    
-    // Enemy Turn
-    setTimeout(enemyTurn, 800);
-}
-
-function enemyTurn() {
-    let roll = Math.floor(Math.random()*20)+1;
-    let dmg = en.atk;
-    if(p.traits.includes('phobia')) dmg *= 2;
-    if(p.defending) { dmg /= 2; p.defending = false; }
-    
-    if(roll === 20) { dmg *= 1.5; log(`Fiend strikes your crown! Critical -${dmg}`); }
-    else if(roll === 1) { dmg = 0; log("Fiend tripped on their own lack of style! Miss!"); }
-    else { log(`Fiend hits for ${dmg}.`); }
-    
-    p.hp -= dmg;
-    updateCUI();
-    if(p.hp <= 0) { alert("You have been unhatted. Disgrace."); resetGame(); }
-}
-
-function winCombat() {
-    let stiches = 20 + (p.level * 10);
-    p.gold += stiches;
-    p.exp += 50;
-    
-    // Loot Rune chance
-    let lootMsg = `Found ${stiches} Stitches and 50 EXP.`;
-    if(Math.random() < 0.5) {
-        let type = ['e','d','p'][Math.floor(Math.random()*3)];
-        let keys = Object.keys(runeBank[type === 'e' ? 'effect' : type === 'd' ? 'delivery' : 'potency']);
-        let rId = runeBank[type === 'e' ? 'effect' : type === 'd' ? 'delivery' : 'potency'][Math.floor(Math.random()*keys.length)].id;
-        p.runes[type].push(rId);
-        lootMsg += `<br>LOOTED: Found a [${rId}] Rune!`;
-    }
-    
-    document.getElementById('loot-text').innerHTML = lootMsg;
-    document.getElementById('battle-actions').style.display = 'none';
-    document.getElementById('loot-screen').style.display = 'block';
-    save();
-}
-
-function exitCombat() { showScreen('screen-hub'); }
-
-// --- RUNE LOOM ---
-function updateRuneLoom() {
-    const render = (type, bankKey) => {
-        let cont = document.getElementById(`inv-${type}`);
-        cont.innerHTML = '';
-        p.runes[type].forEach((rId, i) => {
-            let data = runeBank[bankKey].find(x => x.id === rId);
-            let chip = document.createElement('div');
-            chip.className = 'rune-chip';
-            chip.innerText = data.name;
-            if(activeWeave[type] === data) chip.className += ' selected';
-            chip.onclick = () => { activeWeave[type] = data; updateRuneLoom(); updateWeaveInfo(); };
-            cont.appendChild(chip);
-        });
-    }
-    render('e', 'effect'); render('d', 'delivery'); render('p', 'potency');
-}
-
-function updateWeaveInfo() {
-    if(!activeWeave.e || !activeWeave.d || !activeWeave.p) return;
-    let pow = Math.abs(activeWeave.e.power * activeWeave.d.mult * activeWeave.p.mult);
-    let mana = activeWeave.e.mana + activeWeave.d.mana + activeWeave.p.mana;
-    document.getElementById('weave-desc').innerText = `Power: ${Math.floor(pow)} | Mana: ${Math.max(5, mana)}`;
-}
-
-function bindSpell() {
-    if(!activeWeave.p) return alert("Select all three runes!");
-    let name = document.getElementById('spell-input-name').value || "Unnamed Weave";
-    
-    // Remove runes from inv
-    p.runes.e.splice(p.runes.e.indexOf(activeWeave.e.id), 1);
-    p.runes.d.splice(p.runes.d.indexOf(activeWeave.d.id), 1);
-    p.runes.p.splice(p.runes.p.indexOf(activeWeave.p.id), 1);
-
-    p.spells.push({
-        name: name,
-        power: activeWeave.e.power * activeWeave.d.mult * activeWeave.p.mult,
-        mana: Math.max(5, activeWeave.e.mana + activeWeave.d.mana + activeWeave.p.mana),
-        rE: activeWeave.e.id, rD: activeWeave.d.id, rP: activeWeave.p.id
-    });
-    
-    activeWeave = {e:null, d:null, p:null};
-    save(); showScreen('screen-hub');
-}
-
-function showSpellbook() {
-    const cont = document.getElementById('book-cont');
-    cont.innerHTML = p.spells.length ? '' : "Thy tome is empty.";
-    p.spells.forEach((s, i) => {
-        let card = document.createElement('div');
-        card.className = 'item-card';
-        card.style = 'border:1px solid var(--gold); padding:10px; margin:5px 0';
-        card.innerHTML = `<strong>${s.name}</strong><br>Power: ${Math.floor(Math.abs(s.power))} | Mana: ${s.mana}<br>
-            <button class="btn" style="padding:4px; font-size:0.6rem" onclick="deconstructSpell(${i})">Unweave (Recover Runes)</button>`;
-        cont.appendChild(card);
+function populateStats() {
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = '';
+    ['brim', 'style', 'tilt', 'crown', 'lining', 'weight'].forEach(stat => {
+        const div = document.createElement('div');
+        div.style = 'text-align:center; padding:10px; border:1px solid var(--gold)';
+        div.innerHTML = `<div>${stat.toUpperCase()}</div><div id="${stat}-roll" class="stat-val">?</div>`;
+        grid.appendChild(div);
     });
 }
 
-function deconstructSpell(idx) {
-    let s = p.spells[idx];
-    p.runes.e.push(s.rE); p.runes.d.push(s.rD); p.runes.p.push(s.rP);
-    p.spells.splice(idx, 1);
-    save(); showSpellbook();
+function rollThread() {
+    if (rollIndex >= 6) return;
+    const stat = ['brim', 'style', 'tilt', 'crown', 'lining', 'weight'][rollIndex];
+    let roll = Math.floor(Math.random() * 15) + 6;
+    if (player.traits.includes('legendary')) roll += 4;
+    if (player.traits.includes('unlucky')) roll -= 3;
+    player.stats[stat] = roll;
+    document.getElementById(stat + '-roll').textContent = roll;
+    rollIndex++;
+    if (rollIndex >= 6) {
+        document.getElementById('roll-btn').style.display = 'none';
+        document.getElementById('finish-btn').style.display = 'block';
+    }
 }
 
-// --- UTILITIES ---
-function showScreen(id) {
+function finalizeCharacter() {
+    player.maxHp = 50 + player.stats.weight * 5;
+    if (player.traits.includes('tough')) player.maxHp += 20;
+    if (player.traits.includes('weak')) player.maxHp -= 20;
+    player.hp = player.maxHp;
+    player.maxMana = 30 + player.stats.crown * 2;
+    if (player.traits.includes('manawell')) player.maxMana *= 1.5;
+    player.mana = player.maxMana;
+    if (player.traits.includes('rich')) player.gold += 300;
+    savePlayer();
+    showScreen('screen-hub');
+    updateHub();
+}
+
+function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if(id === 'screen-hub') updateHub();
-    if(id === 'screen-spellmaker') updateRuneLoom();
-    if(id === 'screen-spellbook') showSpellbook();
+    document.getElementById(screenId).classList.add('active');
 }
 
 function updateHub() {
-    document.getElementById('hub-name').innerText = p.name;
-    document.getElementById('hub-gold').innerText = p.gold;
-    document.getElementById('hub-stats').innerHTML = sk.map(k => `<div>${k.toUpperCase()}: ${p.stats[k]}</div>`).join('');
+    document.getElementById('player-name').textContent = player.name;
+    document.getElementById('hub-stitches').textContent = player.gold;
+    const grid = document.getElementById('hub-stats-grid');
+    grid.innerHTML = '';
+    Object.entries(player.stats).forEach(([stat, val]) => {
+        const div = document.createElement('div');
+        div.textContent = `${stat.toUpperCase()}: ${val}`;
+        grid.appendChild(div);
+    });
 }
 
-function updateCUI() {
-    document.getElementById('p-hp').style.width = (p.hp/p.maxHp*100)+'%';
-    document.getElementById('p-mana').style.width = (p.mana/p.maxMana*100)+'%';
-    document.getElementById('e-hp').style.width = (en.hp/en.maxHp*100)+'%';
-    document.getElementById('p-hp-text').innerText = Math.ceil(p.hp)+"/"+p.maxHp;
-    document.getElementById('p-mana-text').innerText = Math.ceil(p.mana)+"/"+p.maxMana;
-    document.getElementById('e-hp-text').innerText = Math.ceil(en.hp)+"/"+en.maxHp;
+function enterDungeon() {
+    enemy = {name: 'Hatless Fiend', icon: '👤', hp: 50 + player.level * 10, maxHp: 50 + player.level * 10, atk: 8 + player.level * 2, hatless: true};
+    player.defending = false;
+    document.getElementById('combat-enemy-name').textContent = enemy.name;
+    document.getElementById('enemy-icon').textContent = enemy.icon;
+    updateCombatBars();
+    updateCombatSpells();
+    document.getElementById('combat-log').innerHTML = '<div>The fiend attacks! Roll for initiative...</div>';
+    document.getElementById('combat-actions').style.display = 'block';
+    document.getElementById('combat-loot').style.display = 'none';
+    showScreen('screen-combat');
 }
 
-function log(m) { const l = document.getElementById('b-log'); l.innerHTML = `<div>${m}</div>` + l.innerHTML; l.scrollTop = 0; }
-function save() { localStorage.setItem('hatRPG_master_loom', JSON.stringify(p)); }
-function resetGame() { if(confirm("Discard soul?")) { localStorage.removeItem('hatRPG_master_loom'); location.reload(); } }
+function combatAction(action, spellIdx = null) {
+    const roll = Math.floor(Math.random() * 20) + 1 + (player.traits.includes('luck') ? 2 : 0);
+    let msg = `Your roll: ${roll} | `;
+    if (action === 'bash') {
+        if (roll < 5) msg += 'Fumble! Hat slips. No damage.';
+        else if (roll >= 15) msg += 'Critical Brim Bash! Double damage.';
+        else {
+            let dmg = 5 + Math.floor(player.stats.brim / 2);
+            if (player.traits.includes('sharp')) dmg *= 1.15;
+            enemy.hp -= dmg;
+            msg += `Brim Bash deals ${dmg} damage.`;
+        }
+    } else if (action === 'brace') {
+        player.defending = true;
+        msg += 'Hat braced. Next damage halved.';
+    } else if (action === 'spell') {
+        const spell = player.spells[spellIdx];
+        if (player.mana < spell.mana) return addCombatLog('Insufficient mana!');
+        player.mana -= spell.mana;
+        let dmg = spell.power;
+        enemy.hp -= dmg;
+        msg += `${spell.name} deals ${dmg} damage.`;
+    }
+    addCombatLog(msg);
+    updateCombatBars();
+    if (enemy.hp <= 0) return victoryCombat();
+    setTimeout(enemyAttack, 1000);
+}
 
+function enemyAttack() {
+    const roll = Math.floor(Math.random() * 20) + 1;
+    let dmg = enemy.atk;
+    if (player.defending) {
+        dmg /= 2;
+        player.defending = false;
+        addCombatLog(`Enemy roll: ${roll} | Your brace halves damage to ${dmg}.`);
+    } else if (player.traits.includes('phobia') && enemy.hatless) {
+        dmg *= 2;
+        addCombatLog(`Enemy roll: ${roll} | Hatless Phobia! Double damage: ${dmg}.`);
+    } else {
+        addCombatLog(`Enemy roll: ${roll} | Deals ${dmg} damage.`);
+    }
+    player.hp -= dmg;
+    updateCombatBars();
+    if (player.hp <= 0) {
+        addCombatLog('Hat integrity zero. Defeat.');
+        setTimeout(() => alert('Unhatted!'), 500);
+    }
+    if (player.traits.includes('regen')) {
+        player.hp = Math.min(player.maxHp, player.hp + 5);
+        addCombatLog('Brim Regen heals 5 HP.');
+        updateCombatBars();
+    }
+}
+
+function victoryCombat() {
+    const lootGold = 20 + Math.floor(Math.random() * 30);
+    player.gold += lootGold;
+    const runeChance = Math.random() < 0.5;
+    let lootMsg = `+${lootGold} Stitches`;
+    if (runeChance) {
+        // Random rune drop
+        const runeType = ['effect', 'delivery', 'potency'][Math.floor(Math.random() * 3)];
+        const runePool = runeBank[runeType === 'effect' ? 'effect' : runeType === 'delivery' ? 'delivery' : 'potency'];
+        const rune = runePool[Math.floor(Math.random() * runePool.length)];
+        player.runes[runeType].push(rune.id);
+        lootMsg += ` + ${rune.name} Rune (${rune.desc})`;
+    }
+    document.getElementById('loot-details').innerHTML = lootMsg;
+    document.getElementById('combat-actions').style.display = 'none';
+    document.getElementById('combat-loot').style.display = 'block';
+}
+
+function endCombat() {
+    savePlayer();
+    showScreen('screen-hub');
+    updateHub();
+}
+
+function openLoom() {
+    updateRuneDisplay();
+    showScreen('screen-loom');
+}
+
+function updateRuneDisplay() {
+    ['effect', 'delivery', 'potency'].forEach(type => {
+        const container = document.getElementById(type + '-runes');
+        container.innerHTML = '';
+        player.runes[type].forEach(runeId => {
+            const rune = runeBank[type][runeId]; // Assume runeBank[type] is indexed by id
+            const chip = document.createElement('div');
+            chip.className = 'rune-chip';
+            chip.innerHTML = rune.name + '<br><small>' + rune.desc + '</small>';
+            chip.onclick = () => selectRune(type, runeId);
+            container.appendChild(chip);
+        });
+    });
+}
+
+function selectRune(type, id) {
+    // Toggle selection logic here
+}
+
+function weaveSpell() {
+    // Spell weaving logic here - check selected runes, consume, add to spells
+}
+
+function openSpellbook() {
+    const list = document.getElementById('spellbook-list');
+    list.innerHTML = player.spells.map(s => `<div class="spell-card">${s.name} - Deconstruct to recover runes</div>`).join('');
+    showScreen('screen-spellbook');
+}
+
+function addCombatLog(msg) {
+    const log = document.getElementById('combat-log');
+    log.innerHTML = `<div style="color: var(--ink); padding:2px 0">[Turn] ${msg}</div>` + log.innerHTML.slice(0, 1000);
+    log.scrollTop = 0;
+}
+
+function updateCombatBars() {
+    document.getElementById('player-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
+    document.getElementById('player-mana-bar').style.width = (player.mana / player.maxMana * 100) + '%';
+    document.getElementById('enemy-hp-bar').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+}
+
+function updateCombatSpells() {
+    const container = document.getElementById('combat-spells');
+    container.innerHTML = player.spells.map((s, i) => `<button class="btn" style="font-size:0.7rem; padding:8px" onclick="combatAction('spell', ${i})">${s.name}</button>`).join('');
+}
+
+function resetJourney() {
+    if (confirm('Unravel your soul? Progress lost.')) location.reload();
+}
+
+function savePlayer() {
+    localStorage.setItem('councilRPG', JSON.stringify(player));
+}
+
+window.onload = populateCreation;
 </script>
 </body>
 </html>
