@@ -14,8 +14,6 @@
         .screen { display: none; }
         .screen.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* UI ELEMENTS */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .stats-display { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.05); padding: 15px; border: 1px dashed var(--ink); }
         .stat-val { font-size: 1.1rem; font-weight: bold; color: var(--dark-red); }
@@ -23,23 +21,20 @@
         .btn:hover:not(:disabled) { filter: brightness(1.2); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .nav-back { position: absolute; top: 10px; left: 10px; color: var(--gold); text-decoration: none; font-size: 0.7rem; }
-
-        /* SHOP & INVENTORY */
         .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .item-card { border: 1px solid var(--gold); padding: 10px; background: rgba(255,255,255,0.4); text-align: center; }
         .inventory-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .inv-item { padding: 5px 10px; border: 1px solid var(--ink); background: #eee; cursor: pointer; font-size: 0.8rem; }
         .inv-item.equipped { border: 2px solid var(--dark-red); background: var(--parchment); }
-
-        /* DUNGEON DELVE */
         .dungeon-map { background: #222; color: #0f0; font-family: monospace; padding: 20px; text-align: center; border: 4px inset #444; margin: 15px 0; min-height: 100px; }
         .room-desc { font-style: italic; text-align: center; margin: 10px 0; font-size: 1rem; }
-
-        /* PROGRESS BARS */
         .bar-wrap { height: 12px; background: #ccc; border: 1px solid var(--ink); margin: 5px 0; position: relative; }
         .bar-fill { height: 100%; transition: width 0.3s; }
         .hp-fill { background: var(--dark-red); }
         .mana-fill { background: var(--mana); }
+        .trait-list { font-size: 0.75rem; border: 1px solid var(--gold); height: 100px; overflow-y: scroll; background: rgba(255,255,255,0.2); }
+        .trait-item { padding: 3px; cursor: pointer; border-bottom: 1px solid #ccc; }
+        .trait-item.selected { background: var(--dark-red); color: white; }
     </style>
 </head>
 <body>
@@ -47,7 +42,6 @@
 <div class="game-container">
     <a href="index.html" class="nav-back">⬅ RETURN TO HQ</a>
 
-    <!-- CREATION -->
     <div id="screen-creation" class="screen active">
         <h1>Manifest Thy Identity</h1>
         <div class="grid-2">
@@ -68,13 +62,18 @@
             </div>
         </div>
         <div class="grid-2" style="margin-top:20px;">
-            <div id="list-adv" style="font-size:0.7rem"></div>
-            <div id="list-dis" style="font-size:0.7rem"></div>
+            <div>
+                <div class="cinzel">Advantages</div>
+                <div id="list-adv" class="trait-list"></div>
+            </div>
+            <div>
+                <div class="cinzel">Disadvantages</div>
+                <div id="list-dis" class="trait-list"></div>
+            </div>
         </div>
         <button class="btn" onclick="goToStats()">Begin Manifestation</button>
     </div>
 
-    <!-- STATS -->
     <div id="screen-stats" class="screen">
         <h1>Rolling the Bones</h1>
         <div class="stats-display" id="stat-grid"></div>
@@ -82,7 +81,6 @@
         <button class="btn" id="btn-start" style="display:none" onclick="finalizeHero()">Step into the Threads</button>
     </div>
 
-    <!-- HUB -->
     <div id="screen-hub" class="screen">
         <h1 id="hub-name">Hero</h1>
         <p id="hub-details" style="text-align:center"></p>
@@ -103,9 +101,9 @@
         <div id="equipped-hat" style="text-align:center; padding:10px; border:1px dashed var(--gold)">None</div>
         <h3>Thy Collection</h3>
         <div id="inventory-list" class="inventory-list"></div>
+        <button class="btn" style="background:#444; margin-top:20px;" onclick="resetGame()">Forsake this Life</button>
     </div>
 
-    <!-- SHOP -->
     <div id="screen-shop" class="screen">
         <h1>The Haberdashery</h1>
         <p style="text-align:center">Wallet: <span id="shop-gold" style="color:var(--gold)"></span> Stitches</p>
@@ -113,7 +111,6 @@
         <button class="btn" style="background:#444" onclick="showScreen('screen-hub')">Leave Shop</button>
     </div>
 
-    <!-- DUNGEON DELVE -->
     <div id="screen-dungeon" class="screen">
         <h1>The Deep Threads</h1>
         <div id="dungeon-info" class="cinzel" style="text-align:center">Floor 1 - Thread 1</div>
@@ -125,7 +122,6 @@
         </div>
     </div>
 
-    <!-- COMBAT & SPELLMAKER REMAINED (Consolidated below) -->
     <div id="screen-combat" class="screen">
         <h2 id="enemy-name">Hatless Fiend</h2>
         <div class="grid-2">
@@ -166,37 +162,26 @@
 </div>
 
 <script>
-// --- DATABASE ---
 const shopItems = [
-    { id: 'fedora', name: 'Sharp Fedora', cost: 100, bonus: { style: 5 }, icon: '🎩' },
-    { id: 'beanie', name: 'Weighted Beanie', cost: 150, bonus: { weight: 5, brim: 2 }, icon: '🧢' },
-    { id: 'wizard', name: 'Star-Stitched Cone', cost: 300, bonus: { crown: 10 }, icon: '🧙' },
-    { id: 'helmet', name: 'Iron Bowler', cost: 500, bonus: { brim: 15 }, icon: '🪖' }
+    { id: 'fedora', name: 'Sharp Fedora', cost: 60, bonus: { style: 5 }, icon: '🎩' },
+    { id: 'beanie', name: 'Weighted Beanie', cost: 100, bonus: { weight: 5, brim: 2 }, icon: '🧢' },
+    { id: 'wizard', name: 'Star-Stitched Cone', cost: 200, bonus: { crown: 10 }, icon: '🧙' },
+    { id: 'helmet', name: 'Iron Bowler', cost: 400, bonus: { brim: 15 }, icon: '🪖' }
 ];
-
-const advantages = [
-    { id: 'regen', name: 'Brim Regen', cost: 5 }, { id: 'mana', name: 'Mana Well', cost: 4 }
-];
-const disadvantages = [
-    { id: 'phobia', name: 'Trilby Phobia', bonus: 5 }, { id: 'weak', name: 'Flimsy Stitching', bonus: 4 }
-];
-
+const advantages = [{ id: 'regen', name: 'Brim Regen', cost: 5 }, { id: 'mana', name: 'Mana Well', cost: 4 }];
+const disadvantages = [{ id: 'phobia', name: 'Trilby Phobia', bonus: 5 }, { id: 'weak', name: 'Flimsy Stitching', bonus: 4 }];
 const runes = {
     effect: [{name:'Ignite', p:12, c:10}, {name:'Mend', p:-10, c:15}],
     delivery: [{name:'Touch', m:1, c:0}, {name:'Storm', m:1.5, c:10}],
     potency: [{name:'Faded', m:0.5, c:-5}, {name:'Pure', m:1.2, c:10}]
 };
 
-// --- STATE ---
-let p = { 
-    name: "", class: "", stats: {}, traits: [], spells: [], 
-    inventory: [], equipped: null, gold: 50, hp: 100, maxHp: 100, 
-    mana: 50, maxMana: 50, level: 1, exp: 0 
-};
+let p = { name: "", class: "", stats: {}, traits: [], spells: [], inventory: [], equipped: null, gold: 50, hp: 100, maxHp: 100, mana: 50, maxMana: 50, level: 1, exp: 0 };
 let curPts = 10;
 let dungeon = { floor: 1, thread: 1 };
+let en = null;
+let cR = {e:null, d:null, po:null};
 
-// --- CORE ---
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -208,13 +193,10 @@ function updateHub() {
     document.getElementById('hub-name').innerText = p.name;
     document.getElementById('hub-gold').innerText = p.gold;
     document.getElementById('hub-details').innerText = `${p.class} | LVL ${p.level}`;
-    const statsKeys = ['brim','style','tilt','crown','lining','weight'];
-    document.getElementById('hub-stats').innerHTML = statsKeys.map(k => `<div>${k.toUpperCase()}: ${getStat(k)}</div>`).join('');
-    
+    const sk = ['brim','style','tilt','crown','lining','weight'];
+    document.getElementById('hub-stats').innerHTML = sk.map(k => `<div>${k.toUpperCase()}: ${getStat(k)}</div>`).join('');
     document.getElementById('equipped-hat').innerText = p.equipped ? `${p.equipped.icon} ${p.equipped.name}` : "None";
-    document.getElementById('inventory-list').innerHTML = p.inventory.map((item, i) => 
-        `<div class="inv-item ${p.equipped && p.equipped.id === item.id ? 'equipped' : ''}" onclick="equipItem(${i})">${item.icon}</div>`
-    ).join('');
+    document.getElementById('inventory-list').innerHTML = p.inventory.map((item, i) => `<div class="inv-item ${p.equipped && p.equipped.id === item.id ? 'equipped' : ''}" onclick="equipItem(${i})">${item.icon}</div>`).join('');
 }
 
 function getStat(key) {
@@ -223,14 +205,12 @@ function getStat(key) {
     return base;
 }
 
-// --- CREATION ---
 window.onload = () => {
     const advDiv = document.getElementById('list-adv');
-    advantages.forEach(a => advDiv.innerHTML += `<div onclick="toggleT('adv','${a.id}',${a.cost})">${a.name} (${a.cost})</div>`);
+    advantages.forEach(a => advDiv.innerHTML += `<div class="trait-item" onclick="toggleT('adv','${a.id}',${a.cost})">${a.name} (${a.cost})</div>`);
     const disDiv = document.getElementById('list-dis');
-    disadvantages.forEach(d => disDiv.innerHTML += `<div onclick="toggleT('dis','${d.id}',${d.bonus})">${d.name} (+${d.bonus})</div>`);
-    
-    const saved = localStorage.getItem('hatRPG_v4');
+    disadvantages.forEach(d => disDiv.innerHTML += `<div class="trait-item" onclick="toggleT('dis','${d.id}',${d.bonus})">${d.name} (+${d.bonus})</div>`);
+    const saved = localStorage.getItem('hatRPG_final');
     if(saved) { p = JSON.parse(saved); showScreen('screen-hub'); }
 };
 
@@ -238,26 +218,26 @@ function toggleT(type, id, val) {
     if(type === 'adv') { p.traits.includes(id) ? (p.traits = p.traits.filter(x=>x!==id), curPts += val) : (curPts >= val && (p.traits.push(id), curPts -= val)); }
     else { p.traits.includes(id) ? (p.traits = p.traits.filter(x=>x!==id), curPts -= val) : (p.traits.push(id), curPts += val); }
     document.getElementById('creation-points').innerText = curPts;
-    event.currentTarget.classList.toggle('inv-item'); // visual feedback
+    event.currentTarget.classList.toggle('selected');
 }
 
 let sIdx = 0;
-const sk = ['brim','style','tilt','crown','lining','weight'];
+const skKeys = ['brim','style','tilt','crown','lining','weight'];
 function goToStats() {
     p.name = document.getElementById('char-name').value || "Unnamed";
     p.class = document.getElementById('char-class').value;
-    document.getElementById('stat-grid').innerHTML = sk.map(k => `<div class="stat-box"><div>${k}</div><div id="s-${k}" class="stat-val">?</div></div>`).join('');
+    document.getElementById('stat-grid').innerHTML = skKeys.map(k => `<div class="stat-box"><div>${k}</div><div id="s-${k}" class="stat-val">?</div></div>`).join('');
     showScreen('screen-stats');
 }
 
 function rollStat() {
-    if(sIdx >= sk.length) return;
+    if(sIdx >= skKeys.length) return;
     let roll = Math.floor(Math.random()*20)+1;
     if(sIdx === 0) roll += Math.floor(curPts/2);
-    p.stats[sk[sIdx]] = roll;
-    document.getElementById(`s-${sk[sIdx]}`).innerText = roll;
+    p.stats[skKeys[sIdx]] = roll;
+    document.getElementById(`s-${skKeys[sIdx]}`).innerText = roll;
     sIdx++;
-    if(sIdx === sk.length) { document.getElementById('btn-roll').style.display='none'; document.getElementById('btn-start').style.display='block'; }
+    if(sIdx === skKeys.length) { document.getElementById('btn-roll').style.display='none'; document.getElementById('btn-start').style.display='block'; }
 }
 
 function finalizeHero() {
@@ -266,7 +246,7 @@ function finalizeHero() {
     save(); showScreen('screen-hub');
 }
 
-// --- SHOP ---
+function openShop() { showScreen('screen-shop'); }
 function updateShop() {
     document.getElementById('shop-gold').innerText = p.gold;
     document.getElementById('shop-items').innerHTML = shopItems.map(item => `
@@ -280,11 +260,7 @@ function updateShop() {
 
 function buyItem(id) {
     const item = shopItems.find(x => x.id === id);
-    if(p.gold >= item.cost) {
-        p.gold -= item.cost;
-        p.inventory.push(item);
-        save(); updateShop();
-    }
+    if(p.gold >= item.cost) { p.gold -= item.cost; p.inventory.push(item); save(); updateShop(); }
 }
 
 function equipItem(idx) {
@@ -293,40 +269,23 @@ function equipItem(idx) {
     save(); updateHub();
 }
 
-// --- DUNGEON ---
-function enterDungeon() {
-    dungeon = { floor: 1, thread: 1 };
-    nextRoom();
-    showScreen('screen-dungeon');
-}
-
+function enterDungeon() { dungeon = { floor: 1, thread: 1 }; nextRoom(); showScreen('screen-dungeon'); }
 function nextRoom() {
-    dungeon.thread++;
-    if(dungeon.thread > 5) { dungeon.floor++; dungeon.thread = 1; }
+    dungeon.thread++; if(dungeon.thread > 5) { dungeon.floor++; dungeon.thread = 1; }
     document.getElementById('dungeon-info').innerText = `Floor ${dungeon.floor} - Thread ${dungeon.thread}`;
-    
     const rng = Math.random();
     if(rng < 0.4) startCombat();
-    else if(rng < 0.7) findTreasure();
-    else findRest();
+    else if(rng < 0.7) { 
+        const f = Math.floor(Math.random()*30) + (dungeon.floor*10); p.gold += f;
+        document.getElementById('dungeon-visual').innerText = "[$] TREASURE [$]";
+        document.getElementById('room-desc').innerText = `You found ${f} Stitches!`;
+    } else {
+        p.hp = Math.min(p.maxHp, p.hp + 20);
+        document.getElementById('dungeon-visual').innerText = "[+] REST AREA [+]";
+        document.getElementById('room-desc').innerText = "Found a safe station. Mended 20 HP.";
+    }
 }
 
-function findTreasure() {
-    const find = Math.floor(Math.random()*50) + (dungeon.floor*10);
-    p.gold += find;
-    document.getElementById('dungeon-visual').innerText = "[$] TREASURE [$]";
-    document.getElementById('room-desc').innerText = `You found a discarded pouch of ${find} Stitches!`;
-    save();
-}
-
-function findRest() {
-    p.hp = Math.min(p.maxHp, p.hp + 20);
-    document.getElementById('dungeon-visual').innerText = "[+] REST AREA [+]";
-    document.getElementById('room-desc').innerText = "A safe sewing station. You mend 20 HP of Hat Integrity.";
-}
-
-// --- COMBAT & SPELLS (Simplified for Space) ---
-let en = null;
 function startCombat() {
     en = { name: "Thread-Ripper", hp: 30+(dungeon.floor*10), maxHp: 30+(dungeon.floor*10), atk: 5+(dungeon.floor*2) };
     document.getElementById('enemy-name').innerText = en.name;
@@ -334,6 +293,7 @@ function startCombat() {
     updateCUI();
     document.getElementById('btn-exit-combat').style.display = 'none';
     document.getElementById('battle-actions').style.display = 'grid';
+    document.getElementById('b-log').innerHTML = "A foe challenges your brim!";
     showScreen('screen-combat');
 }
 
@@ -345,23 +305,26 @@ function updateCUI() {
 
 function battleTurn(a) {
     let d = a === 'atk' ? 5 + Math.floor(getStat('brim')/3) : 0;
-    en.hp -= d; if(en.hp<=0) return win();
+    en.hp -= d; log(`You strike for ${d}!`);
+    if(en.hp<=0) return win();
     setTimeout(()=> {
-        let ed = en.atk; p.hp -= ed; updateCUI();
+        let ed = en.atk; p.hp -= ed; log(`Enemy hits for ${ed}!`); updateCUI();
         if(p.hp<=0) { alert("Hatless!"); resetGame(); }
     }, 500);
 }
 
-function win() {
-    p.gold += 20; p.exp += 40; 
-    document.getElementById('btn-exit-combat').style.display = 'block';
-    document.getElementById('battle-actions').style.display = 'none';
-    save();
+function castS(idx) {
+    const s = p.spells[idx]; if(p.mana < s.cost) return;
+    p.mana -= s.cost; en.hp -= s.power; log(`Cast ${s.name} for ${Math.floor(s.power)}!`);
+    updateCUI(); if(en.hp<=0) return win();
+    setTimeout(()=> { p.hp -= en.atk; updateCUI(); }, 500);
 }
-function finishCombat() { showScreen('screen-dungeon'); }
 
-// SPELLMAKING
-let cR = {e:null, d:null, po:null};
+function win() { p.gold += 20; p.exp += 40; document.getElementById('btn-exit-combat').style.display = 'block'; document.getElementById('battle-actions').style.display = 'none'; log("Victory!"); save(); }
+function finishCombat() { showScreen('screen-dungeon'); }
+function log(m) { document.getElementById('b-log').innerHTML = `<div>${m}</div>` + document.getElementById('b-log').innerHTML; }
+
+function openSpellmaker() { showScreen('screen-spellmaker'); }
 function pickRune(t) {
     const list = t==='effect' ? runes.effect : t==='delivery' ? runes.delivery : runes.potency;
     const i = prompt(list.map((r,x)=>x+': '+r.name).join('\n'));
@@ -374,13 +337,12 @@ function updatePre() {
 }
 function craftSpell() {
     if(!cR.po) return;
-    const pow = cR.e.p * cR.d.m * cR.po.m;
-    p.spells.push({ name: document.getElementById('spell-name').value||'Weave', power: pow, cost: cR.e.c+cR.d.c+cR.po.c });
+    p.spells.push({ name: document.getElementById('spell-name').value||'Weave', power: cR.e.p * cR.d.m * cR.po.m, cost: cR.e.c+cR.d.c+cR.po.c });
     save(); showScreen('screen-hub');
 }
 
-function save() { localStorage.setItem('hatRPG_v4', JSON.stringify(p)); }
-function resetGame() { localStorage.removeItem('hatRPG_v4'); location.reload(); }
+function save() { localStorage.setItem('hatRPG_final', JSON.stringify(p)); }
+function resetGame() { localStorage.removeItem('hatRPG_final'); location.reload(); }
 </script>
 </body>
 </html>
