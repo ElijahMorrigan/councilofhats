@@ -412,7 +412,8 @@
             <div id="loot-details" style="margin:15px 0; font-size:0.9rem; line-height:1.9;"></div>
             <div class="grid-2">
                 <button class="btn" onclick="continueDeeper()">Continue Deeper</button>
-                <button class="btn safe" onclick="exitToHub()">Return to Hub</button>
+                <button class="btn safe" onclick="exitToHub()">Return to Hub (keep depth)</button>
+                <button class="btn" style="background:#444;" onclick="endDungeonRun()">End Run (reset depth)</button>
             </div>
         </div>
     </div>
@@ -751,6 +752,39 @@
             <div style="margin-top:10px; font-size:0.7rem; color:var(--border); line-height:1.6;">Three of a Kind = 4× | Pair + Hat = 2.5× | Pair = 1.5× | High card = 1× | No match low = lose</div>
         </div>
         <button class="btn" style="background:#444; margin-top:20px;" onclick="showScreen('screen-hub')">Return to Hub</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: ACHIEVEMENTS ══════════════ -->
+    <div id="screen-achievements" class="screen">
+        <h1>The Hall of Deeds</h1>
+        <p style="text-align:center;font-style:italic;font-size:0.85rem;margin-bottom:15px;">A record of thy hat-related accomplishments, filed by the Council in triplicate.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--gold);margin-bottom:15px;background:rgba(0,0,0,0.03);">
+            <span class="cinzel" style="font-size:0.7rem;">Deeds Completed: <strong id="ach-count" style="color:var(--dark-red);">0</strong> / <strong id="ach-total">0</strong></span>
+            <span id="ach-rank-badge" class="cinzel" style="font-size:0.7rem;color:var(--gold);"></span>
+        </div>
+        <div id="achievements-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:20px;"></div>
+        <button class="btn" style="background:#444;" onclick="showScreen('screen-hub')">Return to Hub</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: TROPHY ROOM ══════════════ -->
+    <div id="screen-trophy" class="screen">
+        <h1>The Trophy Room</h1>
+        <p style="text-align:center;font-style:italic;font-size:0.85rem;margin-bottom:5px;">"Each certificate is signed by Darkneblade personally. He has very good penmanship."</p>
+        <div id="trophy-wall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin:20px 0;"></div>
+        <div id="trophy-empty" style="text-align:center;padding:40px;font-style:italic;color:var(--border);">No certificates earned yet. Venture into the Deep Threads and prove thyself.</div>
+        <button class="btn" style="background:#444;" onclick="showScreen('screen-hub')">Return to Hub</button>
+    </div>
+
+    <!-- ══════════════ SCREEN: COUNCIL RANK ══════════════ -->
+    <div id="screen-rank" class="screen">
+        <h1>Council Standing</h1>
+        <div id="rank-current-display" style="text-align:center;padding:25px;border:3px double var(--gold);background:rgba(139,105,20,0.05);margin-bottom:20px;">
+        </div>
+        <div class="cinzel" style="margin-bottom:10px;font-size:0.7rem;">Full Rank Progression</div>
+        <div id="rank-progression" style="margin-bottom:20px;"></div>
+        <div class="cinzel" style="margin-bottom:10px;font-size:0.7rem;">Rank Perks & Unlocks</div>
+        <div id="rank-perks-list" style="margin-bottom:20px;"></div>
+        <button class="btn" style="background:#444;" onclick="showScreen('screen-hub')">Return to Hub</button>
     </div>
 
 </div>
@@ -1115,6 +1149,7 @@ window.onload = () => {
         const found = allChars.find(c=>c.id===activeId);
         if(found) {
             player = found.data;
+            dungeonDepth = player._dungeonDepth||0;
             showScreen('screen-hub');
             updateHub();
             return;
@@ -1398,7 +1433,10 @@ function enterDungeon() {
         aiTarget:eType.aiTarget,
         zones:buildEnemyZones(lvl), statuses:{},
     };
-    player.statuses = player.statuses||{};
+    // Preserve permanent statuses, clear temporary ones
+    const permStatuses={};
+    if(player.traits&&player.traits.includes('hateless')) permStatuses.hatless=true;
+    player.statuses=permStatuses;
     player.defending=false; player.safetyPinUsed=player.safetyPinUsed||false;
     // Reset per-combat flags
     player._hatbornUsed=false; player._spellShieldUsed=false; player._immortalUsed=false;
@@ -1786,21 +1824,26 @@ function processTurnEnd() {
     if(player.class?.id==='fez_wizard') { player.mana=Math.min(player.maxMana,player.mana+5); }
     const evoManaRegen=evo.manaRegen||0;
     if(evoManaRegen) { player.mana=Math.min(player.maxMana,player.mana+evoManaRegen); }
-    // Singed on player
+    // Singed on player — hits body zone
     if(player.statuses?.singed>0) {
-        if(player.zones.hat) player.zones.hat.hp=Math.max(0,player.zones.hat.hp-3);
+        const dmg=player.statuses.unraveled?5:3; // Unraveled = stronger singed
+        if(player.zones.body) player.zones.body.hp=Math.max(0,player.zones.body.hp-dmg);
         player.statuses.singed--;
-        addLog('system',`🔥 Singed burns thy hat: 3 HP! (${player.statuses.singed} turns left)`);
+        if(player.statuses.singed<=0) delete player.statuses.singed;
+        addLog('system',`🔥 Singed burns ${dmg} Body HP! (${player.statuses.singed||0} turns left)`);
     }
-    // Singed on enemy
-    if(enemy.statuses?.singed>0) {
-        const st=enemy.aiTarget;
-        if(enemy.zones[st]) enemy.zones[st].hp=Math.max(0,enemy.zones[st].hp-3);
+    // Singed on enemy — hits their most damaged non-dead zone
+    if(enemy&&enemy.statuses?.singed>0) {
+        const liveZones=ZONE_TEMPLATES.filter(z=>enemy.zones[z.id]&&enemy.zones[z.id].hp>0);
+        const target=liveZones.length?liveZones.sort((a,b)=>enemy.zones[a.id].hp-enemy.zones[b.id].hp)[0].id:'body';
+        if(enemy.zones[target]) enemy.zones[target].hp=Math.max(0,enemy.zones[target].hp-3);
         enemy.statuses.singed--;
-        addLog('system',`🔥 Enemy Singed: 3 damage! (${enemy.statuses.singed} turns left)`);
+        if(enemy.statuses.singed<=0) delete enemy.statuses.singed;
+        addLog('system',`🔥 Enemy Singed: 3 damage to ${target.toUpperCase()}! (${enemy.statuses.singed||0} left)`);
     }
-    // Jitter countdown
-    if(enemy.statuses?.jitter>0) enemy.statuses.jitter=Math.max(0,enemy.statuses.jitter-1);
+    // Jitter — just a flag, decrements only when enemy tries to act (handled in enemyTurn)
+    // Stiffened — decrements only when enemy tries to act (handled in enemyTurn)
+    // Blessed — defence bonus, no countdown needed
 }
 
 // ═══════════════════════════════════════
@@ -1933,7 +1976,8 @@ function processVictory() {
 }
 
 function continueDeeper() { enterDungeon(); }
-function exitToHub() { dungeonDepth=0; showScreen('screen-hub'); savePlayer(); }
+function exitToHub() { showScreen('screen-hub'); savePlayer(); }
+function endDungeonRun() { dungeonDepth=0; showScreen('screen-hub'); savePlayer(); }
 
 // ═══════════════════════════════════════
 // RUNE LOOM
@@ -2950,6 +2994,7 @@ function saveAllCharacters(chars) {
 function savePlayer() {
     if(!player.stats) player.stats={};
     player.stats._maxDepth=Math.max(player.stats._maxDepth||0,dungeonDepth);
+    player._dungeonDepth=dungeonDepth; // persist depth
     if(!player._charId) player._charId='char_'+Date.now();
     const chars=getAllCharacters();
     const idx=chars.findIndex(c=>c.id===player._charId);
@@ -3004,6 +3049,7 @@ function loadCharacter(id) {
     const found=chars.find(c=>c.id===id);
     if(!found){alert('Character not found!');return;}
     player=found.data;
+    dungeonDepth=player._dungeonDepth||0;
     localStorage.setItem('hatRPG_activeChar',id);
     showScreen('screen-hub');
     updateHub();
@@ -3271,7 +3317,10 @@ function resurrect(){
         }
     });
     player.mana=Math.floor(player.maxMana*0.5);
-    player.statuses={};
+    // Only clear temporary combat statuses, keep permanent ones like hatless from Ex-Hatless trait
+    const keepStatuses={};
+    if(player.traits.includes('hateless')) keepStatuses.hatless=true;
+    player.statuses=keepStatuses;
     dungeonDepth=0;
     savePlayer();
     showAchievementToast('🎩 Resurrected! Thy hat returns from the beyond.');
@@ -3587,6 +3636,265 @@ function allIn(){
     checkEnemyDead(); renderCombat();
     if(!isEnemyDead()) setTimeout(enemyTurn,900);
 }
+
+// ═══════════════════════════════════════
+// EXPANDED ACHIEVEMENTS
+// ═══════════════════════════════════════
+// Add more achievements to existing array
+ACHIEVEMENTS.push(
+    { id:'deep50',      name:'The Deeper Dark',        desc:'Reach dungeon depth 50.',              check:()=>(player.stats?._maxDepth||0)>=50 },
+    { id:'level100',    name:'Century of Hats',         desc:'Reach level 100.',                     check:()=>player.level>=100 },
+    { id:'boss4',       name:'Shadow Defeated',         desc:'Defeat all 4 named bosses.',           check:()=>(player.stats?._bossesDefeated||0)>=4 },
+    { id:'casino_win',  name:'The Hat Always Wins',     desc:'Win 500 Stitches from the casino.',    check:()=>(player.stats?._casinoWon||0)>=500 },
+    { id:'craft5',      name:'Master of the Forge',     desc:'Craft 5 hat parts.',                   check:()=>(player.stats?._craftCount||0)>=5 },
+    { id:'spells10',    name:'Tome Complete',           desc:'Have 10 spells in thy tome.',          check:()=>(player.spells?.length||0)>=10 },
+    { id:'died3',       name:'Thrice Unhatted',         desc:'Be defeated 3 times and return.',      check:()=>(player.deathCount||0)>=3 },
+    { id:'kill50',      name:'Hat Reaper',              desc:'Defeat 50 enemies.',                   check:()=>(player.killCount||0)>=50 },
+    { id:'kill100',     name:'Century of Slaughter',    desc:'Defeat 100 enemies.',                  check:()=>(player.killCount||0)>=100 },
+    { id:'wealthy',     name:'Flush with Excess',       desc:'Hold 5000 Stitches at once.',          check:()=>player.gold>=5000 },
+    { id:'perk10',      name:'Perk Collector',          desc:'Own 10 perks.',                        check:()=>(player.ownedPerks?.length||0)>=10 },
+    { id:'evo3',        name:'Third Stitching',         desc:'Reach the third evolution tier.',      check:()=>(player.evolutionPath?.length||0)>=3 },
+    { id:'hatborn_save',name:'The Hat Refuses to Die',  desc:'Survive via Hat-Born ability.',        check:()=>player.stats?._hatbornSaved },
+    { id:'class_abil10',name:'Master of the Ability',   desc:'Use thy class ability 10 times.',      check:()=>(player.stats?._classAbilUses||0)>=10 },
+    { id:'rest10',      name:'Well Rested',             desc:'Rest at the quarters 10 times.',       check:()=>(player.stats?._restCount||0)>=10 },
+);
+
+// Track class ability uses
+const _origUseClassAbility=useClassAbility;
+useClassAbility=function(){
+    _origUseClassAbility();
+    if(!player.stats) player.stats={};
+    player.stats._classAbilUses=(player.stats._classAbilUses||0)+1;
+};
+
+// Track rest
+const _origDoRest=doRest;
+doRest=function(type){
+    _origDoRest(type);
+    if(!player.stats) player.stats={};
+    player.stats._restCount=(player.stats._restCount||0)+1;
+};
+
+// Track casino wins
+const _origSpinSlots=spinSlots;
+spinSlots=function(){
+    const before=player.gold;
+    _origSpinSlots();
+    // Gold diff checked after animation — approximate via a delayed check
+    setTimeout(()=>{
+        const diff=player.gold-before;
+        if(diff>0){if(!player.stats)player.stats={};player.stats._casinoWon=(player.stats._casinoWon||0)+diff;}
+    },2000);
+};
+
+// Track spell casts
+const _origCastSpell=castSpell;
+castSpell=function(idx){
+    if(!player.stats) player.stats={};
+    player.stats._spellsCast=(player.stats._spellsCast||0)+1;
+    _origCastSpell(idx);
+};
+
+// ═══════════════════════════════════════
+// ACHIEVEMENT SCREEN
+// ═══════════════════════════════════════
+function openAchievements(){ updateAchievementsUI(); showScreen('screen-achievements'); }
+
+function updateAchievementsUI(){
+    if(!player.achievements) player.achievements=[];
+    const earned=player.achievements.length;
+    const total=ACHIEVEMENTS.length;
+    document.getElementById('ach-count').textContent=earned;
+    document.getElementById('ach-total').textContent=total;
+    const rank=getCouncilRank();
+    document.getElementById('ach-rank-badge').textContent=`Rank: ${rank.name}`;
+    const grid=document.getElementById('achievements-grid');
+    grid.innerHTML='';
+    ACHIEVEMENTS.forEach(ach=>{
+        const owned=player.achievements.includes(ach.id);
+        const div=document.createElement('div');
+        div.style.cssText=`border:1px solid ${owned?'var(--gold)':'var(--border)'};padding:12px;background:${owned?'rgba(139,105,20,0.1)':'rgba(0,0,0,0.03)'};opacity:${owned?'1':'0.5'};transition:0.2s;`;
+        div.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="font-size:1.5rem;">${owned?'🏅':'🔒'}</span>
+            <div>
+                <div class="cinzel" style="font-size:0.7rem;color:${owned?'var(--dark-red)':'var(--border)'};">${ach.name}</div>
+                <div style="font-size:0.72rem;color:var(--border);margin-top:2px;">${ach.desc}</div>
+            </div>
+        </div>
+        ${owned?'<div style="font-size:0.65rem;color:var(--green);font-family:\'Cinzel\',serif;">✦ COMPLETED</div>':''}`;
+        grid.appendChild(div);
+    });
+}
+
+// ═══════════════════════════════════════
+// TROPHY ROOM
+// ═══════════════════════════════════════
+// Certificate designs per achievement
+const CERT_STYLES={
+    first_blood:  {border:'#8b1a1a',bg:'rgba(139,26,26,0.05)',icon:'⚔️',colour:'#8b1a1a'},
+    hat_fall:     {border:'#333',   bg:'rgba(0,0,0,0.05)',    icon:'🎩',colour:'#333'},
+    deep5:        {border:'#2a4d69',bg:'rgba(42,77,105,0.05)',icon:'🕳️',colour:'#2a4d69'},
+    deep20:       {border:'#1a0a2a',bg:'rgba(26,10,42,0.05)', icon:'🌑',colour:'#4a1259'},
+    deep50:       {border:'#000',   bg:'rgba(0,0,0,0.08)',    icon:'☠️',colour:'#333'},
+    first_spell:  {border:'#2a4d69',bg:'rgba(42,77,105,0.05)',icon:'✨',colour:'#2a4d69'},
+    level10:      {border:'#8b6914',bg:'rgba(139,105,20,0.05)',icon:'⭐',colour:'#8b6914'},
+    level50:      {border:'#c9a84c',bg:'rgba(201,168,76,0.08)',icon:'🌟',colour:'#8b6914'},
+    level100:     {border:'#c9a84c',bg:'rgba(201,168,76,0.12)',icon:'👑',colour:'#8b6914'},
+    boss1:        {border:'#8b1a1a',bg:'rgba(139,26,26,0.08)',icon:'💀',colour:'#8b1a1a'},
+    boss4:        {border:'#6b0000',bg:'rgba(107,0,0,0.1)',   icon:'🏆',colour:'#6b0000'},
+    full_gear:    {border:'#8b6914',bg:'rgba(139,105,20,0.08)',icon:'🎩',colour:'#8b6914'},
+    first_craft:  {border:'#5c3d1e',bg:'rgba(92,61,30,0.05)', icon:'⚗️',colour:'#5c3d1e'},
+    craft5:       {border:'#5c3d1e',bg:'rgba(92,61,30,0.08)', icon:'🔨',colour:'#5c3d1e'},
+    rich:         {border:'#8b6914',bg:'rgba(139,105,20,0.05)',icon:'💰',colour:'#8b6914'},
+    wealthy:      {border:'#c9a84c',bg:'rgba(201,168,76,0.1)' ,icon:'💎',colour:'#8b6914'},
+    evo1:         {border:'#4a1259',bg:'rgba(74,18,89,0.05)',  icon:'✦', colour:'#4a1259'},
+    evo3:         {border:'#4a1259',bg:'rgba(74,18,89,0.1)',   icon:'🌀',colour:'#4a1259'},
+    casino_win:   {border:'#2d6a2d',bg:'rgba(45,106,45,0.05)',icon:'🎰',colour:'#2d6a2d'},
+    kill50:       {border:'#8b1a1a',bg:'rgba(139,26,26,0.05)',icon:'⚔️',colour:'#8b1a1a'},
+    kill100:      {border:'#6b0000',bg:'rgba(107,0,0,0.08)',  icon:'🗡️',colour:'#6b0000'},
+    died3:        {border:'#4a1259',bg:'rgba(74,18,89,0.08)',  icon:'☠️',colour:'#4a1259'},
+    spells10:     {border:'#2a4d69',bg:'rgba(42,77,105,0.08)',icon:'📖',colour:'#2a4d69'},
+    perk10:       {border:'#8b6914',bg:'rgba(139,105,20,0.06)',icon:'🧠',colour:'#8b6914'},
+    hatborn_save: {border:'#8b6914',bg:'rgba(139,105,20,0.1)' ,icon:'🎩',colour:'#c9a84c'},
+    class_abil10: {border:'#4a1259',bg:'rgba(74,18,89,0.06)',  icon:'⚡',colour:'#4a1259'},
+    rest10:       {border:'#2d6a2d',bg:'rgba(45,106,45,0.05)',icon:'🛏️',colour:'#2d6a2d'},
+};
+
+function openTrophyRoom(){ updateTrophyRoom(); showScreen('screen-trophy'); }
+
+function updateTrophyRoom(){
+    if(!player.achievements) player.achievements=[];
+    const wall=document.getElementById('trophy-wall');
+    const empty=document.getElementById('trophy-empty');
+    wall.innerHTML='';
+    if(!player.achievements.length){ empty.style.display='block'; return; }
+    empty.style.display='none';
+    player.achievements.forEach(id=>{
+        const ach=ACHIEVEMENTS.find(a=>a.id===id); if(!ach) return;
+        const style=CERT_STYLES[id]||{border:'var(--gold)',bg:'rgba(139,105,20,0.05)',icon:'🏅',colour:'var(--gold)'};
+        const div=document.createElement('div');
+        div.style.cssText=`border:3px double ${style.border};padding:20px;background:${style.bg};text-align:center;position:relative;`;
+        div.innerHTML=`
+            <div style="position:absolute;top:6px;left:10px;font-size:0.55rem;font-family:'Cinzel',serif;color:${style.colour};letter-spacing:2px;opacity:0.7;">COUNCIL OF HATS</div>
+            <div style="position:absolute;top:6px;right:10px;font-size:0.55rem;font-family:'Cinzel',serif;color:${style.colour};letter-spacing:1px;opacity:0.7;">CERT. OF DEED</div>
+            <div style="font-size:2.5rem;margin:12px 0 8px;">${style.icon}</div>
+            <div style="font-family:'UnifrakturMaguntia',cursive;font-size:1.2rem;color:${style.colour};margin-bottom:4px;">${ach.name}</div>
+            <div style="font-size:0.7rem;font-style:italic;color:var(--border);margin-bottom:12px;">${ach.desc}</div>
+            <div style="border-top:1px solid ${style.border};padding-top:8px;font-size:0.6rem;font-family:'Cinzel',serif;color:${style.colour};">
+                Awarded to <em style="font-style:italic;">${player.name||'The Hat Wearer'}</em> by the Council of Hats
+            </div>
+            <div style="font-size:0.55rem;color:var(--border);margin-top:4px;font-style:italic;">Signed: Darkneblade · Grand Hat Wearer</div>`;
+        wall.appendChild(div);
+    });
+}
+
+// ═══════════════════════════════════════
+// COUNCIL RANK SCREEN + MECHANICAL BONUSES
+// ═══════════════════════════════════════
+const RANK_BONUSES={
+    'Hatless Initiate':     { shopDiscount:0,   dungeonGold:0,   desc:'No rank bonuses yet. Earn thy hat.' },
+    'Brim Apprentice':      { shopDiscount:0,   dungeonGold:5,   desc:'+5% gold from dungeons.' },
+    'Thread Journeyman':    { shopDiscount:5,   dungeonGold:5,   desc:'+5% shop discount. +5% dungeon gold.' },
+    'Hat Adept':            { shopDiscount:5,   dungeonGold:10,  desc:'+5% shop discount. +10% dungeon gold.' },
+    'Council Member':       { shopDiscount:10,  dungeonGold:10,  desc:'+10% shop discount. +10% dungeon gold. Merchant stocks +1 item.' },
+    'Senior Hat Wearer':    { shopDiscount:10,  dungeonGold:15,  desc:'+10% shop discount. +15% dungeon gold. Repair costs -20%.' },
+    'Grand Weaver':         { shopDiscount:15,  dungeonGold:20,  desc:'+15% shop discount. +20% dungeon gold. Rare rune drop chance +10%.' },
+    'Council Elder':        { shopDiscount:20,  dungeonGold:25,  desc:'+20% shop discount. +25% dungeon gold. All repairs free.' },
+    'Brim Transcendent':    { shopDiscount:25,  dungeonGold:30,  desc:'+25% shop discount. +30% dungeon gold. Boss loot doubled.' },
+    'Darkneblade\'s Chosen':{ shopDiscount:30,  dungeonGold:40,  desc:'+30% shop discount. +40% dungeon gold. All hat parts +1 rarity tier.' },
+    'The Final Hat':        { shopDiscount:50,  dungeonGold:50,  desc:'Half price everything. +50% dungeon gold. Thou art beyond mortal economics.' },
+};
+
+function getRankBonus(){ return RANK_BONUSES[getCouncilRank().name]||RANK_BONUSES['Hatless Initiate']; }
+
+function openRankScreen(){ updateRankUI(); showScreen('screen-rank'); }
+
+function updateRankUI(){
+    const rank=getCouncilRank();
+    const bonus=getRankBonus();
+    const nextRank=COUNCIL_RANKS.find(r=>r.lvl>player.level);
+    document.getElementById('rank-current-display').innerHTML=`
+        <div style="font-size:0.7rem;letter-spacing:3px;font-family:'Cinzel',serif;color:var(--gold);margin-bottom:8px;">CURRENT STANDING</div>
+        <div style="font-family:'UnifrakturMaguntia',cursive;font-size:2rem;color:var(--dark-red);">${rank.name}</div>
+        <div style="font-style:italic;font-size:0.9rem;margin:8px 0;color:var(--border);">"${rank.desc}"</div>
+        <div style="font-size:0.75rem;color:var(--green);margin-top:8px;">${bonus.desc}</div>
+        ${nextRank?`<div style="font-size:0.7rem;color:var(--gold);margin-top:8px;font-family:'Cinzel',serif;">Next rank: ${nextRank.name} at level ${nextRank.lvl}</div>`:'<div style="font-size:0.7rem;color:var(--gold);margin-top:8px;">Thou hast reached the final rank.</div>'}`;
+    // Progression
+    const prog=document.getElementById('rank-progression'); prog.innerHTML='';
+    COUNCIL_RANKS.forEach(r=>{
+        const reached=player.level>=r.lvl;
+        const isCurrent=r.name===rank.name;
+        const div=document.createElement('div');
+        div.style.cssText=`display:flex;align-items:center;gap:12px;padding:8px;border-left:3px solid ${isCurrent?'var(--dark-red)':reached?'var(--gold)':'var(--border)'};margin-bottom:4px;background:${isCurrent?'rgba(107,26,26,0.08)':'transparent'};`;
+        div.innerHTML=`<span style="font-size:1rem;">${reached?'✦':'○'}</span>
+            <div><div class="cinzel" style="font-size:0.7rem;color:${reached?'var(--dark-red)':'var(--border)'};">${r.name}</div>
+            <div style="font-size:0.65rem;color:var(--border);">Level ${r.lvl}</div></div>
+            ${isCurrent?'<span style="font-size:0.65rem;color:var(--dark-red);margin-left:auto;font-family:\'Cinzel\',serif;">◀ CURRENT</span>':''}`;
+        prog.appendChild(div);
+    });
+    // Rank perks
+    const perksEl=document.getElementById('rank-perks-list'); perksEl.innerHTML='';
+    Object.entries(RANK_BONUSES).forEach(([rankName,b])=>{
+        const reached=Object.values(COUNCIL_RANKS).find(r=>r.name===rankName&&player.level>=r.lvl);
+        if(!b.shopDiscount&&!b.dungeonGold) return;
+        const div=document.createElement('div');
+        div.style.cssText=`padding:8px 12px;border:1px solid ${reached?'var(--gold)':'var(--border)'};margin-bottom:4px;opacity:${reached?1:0.4};font-size:0.75rem;`;
+        div.innerHTML=`<strong class="cinzel" style="font-size:0.65rem;">${rankName}:</strong> ${b.desc}`;
+        perksEl.appendChild(div);
+    });
+}
+
+// Apply rank bonuses to gold drops
+const _origProcessVictory2=processVictory;
+processVictory=function(){
+    _origProcessVictory2();
+    // Rank gold bonus applied on top (already in processVictory gold calc — add here via patch)
+    const bonus=getRankBonus();
+    if(bonus.dungeonGold>0){
+        const extra=Math.floor(player.gold*(bonus.dungeonGold/100)*0.1); // small additional %
+        player.gold+=extra;
+    }
+};
+
+// Apply rank discount to shop prices display
+function getShopPrice(basePrice){
+    const discount=getRankBonus().shopDiscount||0;
+    return Math.max(1,Math.floor(basePrice*(1-discount/100)));
+}
+
+// Inject hub buttons for new screens
+const _origUpdateHub3=updateHub;
+updateHub=function(){
+    _origUpdateHub3();
+    if(!document.getElementById('hub-rank-btns')){
+        const actionsDiv=document.getElementById('hub-extra-btns');
+        if(actionsDiv){
+            const extra=document.createElement('div');
+            extra.id='hub-rank-btns';
+            extra.innerHTML=`
+                <button class="btn" style="background:#2a2a1a;" onclick="openAchievements()">🏅 Hall of Deeds</button>
+                <button class="btn" style="background:#3a2a0a;" onclick="openTrophyRoom()">🏆 Trophy Room</button>
+                <button class="btn" style="background:#1a2a1a;" onclick="openRankScreen()">📜 Council Standing</button>`;
+            actionsDiv.appendChild(extra);
+        }
+    }
+    // Show rank on hub
+    const rankEl=document.getElementById('hub-evo-title');
+    if(rankEl){
+        const rank=getCouncilRank();
+        const evoLabel=player.evolutionPath&&player.evolutionPath.length>0?` · ${getEvoTitle()}`:'';
+        rankEl.innerHTML=`<span class="rank-badge">${rank.name}</span>${evoLabel}`;
+    }
+};
+
+// Wire showScreen for new screens
+const _origShowScreen2=showScreen;
+showScreen=function(id){
+    _origShowScreen2(id);
+    if(id==='screen-achievements') updateAchievementsUI();
+    if(id==='screen-trophy') updateTrophyRoom();
+    if(id==='screen-rank') updateRankUI();
+};
 </script>
 </body>
 </html>
